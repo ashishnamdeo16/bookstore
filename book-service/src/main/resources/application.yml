@@ -1,0 +1,10 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: book-service
+
+jwt:
+  secret: 3b796f1d-02e9-4263-a411-ceb6e5532239
+  expiration: 900000

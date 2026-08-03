@@ -1,0 +1,13 @@
+server:
+  port: 8084
+
+spring:
+  profiles:
+    active: dev
+
+  application:
+    name: order-service
+
+jwt:
+  secret: 3b796f1d-02e9-4263-a411-ceb6e5532239
+  expiration: 900000
