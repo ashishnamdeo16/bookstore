@@ -1,6 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import type { Author, BookCreateRequest, Category, Publisher } from '../../types/book';
+import { Alert } from '../ui/Alert';
+import { Button } from '../ui/Button';
 import { authorName } from '../../hooks/useBooks';
+import type { Author, BookCreateRequest, Category, Publisher } from '../../types/book';
 
 export interface BookFormValues {
   isbn: string;
@@ -104,86 +106,98 @@ export function BookForm({
     }
   }
 
-  const fieldClass =
-    'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20';
-
   return (
-    <form className="space-y-5" onSubmit={(event) => void handleSubmit(event)} noValidate>
-      {formError ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {formError}
-        </p>
-      ) : null}
+    <form className="admin-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
+      {formError ? <Alert variant="error">{formError}</Alert> : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="block text-sm font-medium text-slate-700">
-          ISBN
+      <div className="admin-form__grid">
+        <div className={`field ${errors.isbn ? 'field--error' : ''}`}>
+          <label className="field__label" htmlFor="book-isbn">
+            ISBN <span className="field__required">*</span>
+          </label>
           <input
-            className={fieldClass}
+            id="book-isbn"
+            className="field__input"
             value={values.isbn}
             onChange={(event) => updateField('isbn', event.target.value)}
           />
-          {errors.isbn ? <span className="mt-1 block text-xs text-red-600">{errors.isbn}</span> : null}
-        </label>
+          {errors.isbn ? <p className="field__error">{errors.isbn}</p> : null}
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Title
+        <div className={`field ${errors.title ? 'field--error' : ''}`}>
+          <label className="field__label" htmlFor="book-title">
+            Title <span className="field__required">*</span>
+          </label>
           <input
-            className={fieldClass}
+            id="book-title"
+            className="field__input"
             value={values.title}
             onChange={(event) => updateField('title', event.target.value)}
           />
-          {errors.title ? <span className="mt-1 block text-xs text-red-600">{errors.title}</span> : null}
-        </label>
+          {errors.title ? <p className="field__error">{errors.title}</p> : null}
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700 md:col-span-2">
-          Description
+        <div className="field admin-form__full">
+          <label className="field__label" htmlFor="book-description">
+            Description
+          </label>
           <textarea
-            className={`${fieldClass} min-h-24`}
+            id="book-description"
+            className="field__input field__textarea"
             value={values.description}
             onChange={(event) => updateField('description', event.target.value)}
           />
-        </label>
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Price
+        <div className={`field ${errors.price ? 'field--error' : ''}`}>
+          <label className="field__label" htmlFor="book-price">
+            Price <span className="field__required">*</span>
+          </label>
           <input
+            id="book-price"
             type="number"
             min="0.01"
             step="0.01"
-            className={fieldClass}
+            className="field__input"
             value={values.price}
             onChange={(event) => updateField('price', event.target.value)}
           />
-          {errors.price ? <span className="mt-1 block text-xs text-red-600">{errors.price}</span> : null}
-        </label>
+          {errors.price ? <p className="field__error">{errors.price}</p> : null}
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Language
+        <div className={`field ${errors.language ? 'field--error' : ''}`}>
+          <label className="field__label" htmlFor="book-language">
+            Language <span className="field__required">*</span>
+          </label>
           <input
-            className={fieldClass}
+            id="book-language"
+            className="field__input"
             value={values.language}
             onChange={(event) => updateField('language', event.target.value)}
           />
-          {errors.language ? (
-            <span className="mt-1 block text-xs text-red-600">{errors.language}</span>
-          ) : null}
-        </label>
+          {errors.language ? <p className="field__error">{errors.language}</p> : null}
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Published date
+        <div className="field">
+          <label className="field__label" htmlFor="book-published">
+            Published date
+          </label>
           <input
+            id="book-published"
             type="date"
-            className={fieldClass}
+            className="field__input"
             value={values.publishedDate}
             onChange={(event) => updateField('publishedDate', event.target.value)}
           />
-        </label>
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Category
+        <div className={`field ${errors.categoryId ? 'field--error' : ''}`}>
+          <label className="field__label" htmlFor="book-category">
+            Category <span className="field__required">*</span>
+          </label>
           <select
-            className={fieldClass}
+            id="book-category"
+            className="field__input"
             value={values.categoryId}
             onChange={(event) => updateField('categoryId', event.target.value)}
           >
@@ -194,15 +208,16 @@ export function BookForm({
               </option>
             ))}
           </select>
-          {errors.categoryId ? (
-            <span className="mt-1 block text-xs text-red-600">{errors.categoryId}</span>
-          ) : null}
-        </label>
+          {errors.categoryId ? <p className="field__error">{errors.categoryId}</p> : null}
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Publisher
+        <div className={`field ${errors.publisherId ? 'field--error' : ''}`}>
+          <label className="field__label" htmlFor="book-publisher">
+            Publisher <span className="field__required">*</span>
+          </label>
           <select
-            className={fieldClass}
+            id="book-publisher"
+            className="field__input"
             value={values.publisherId}
             onChange={(event) => updateField('publisherId', event.target.value)}
           >
@@ -213,51 +228,40 @@ export function BookForm({
               </option>
             ))}
           </select>
-          {errors.publisherId ? (
-            <span className="mt-1 block text-xs text-red-600">{errors.publisherId}</span>
-          ) : null}
-        </label>
+          {errors.publisherId ? <p className="field__error">{errors.publisherId}</p> : null}
+        </div>
       </div>
 
-      <fieldset>
-        <legend className="text-sm font-medium text-slate-700">Authors</legend>
-        <div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3">
+      <fieldset className={`admin-checklist ${errors.authorIds ? 'field--error' : ''}`}>
+        <legend className="field__label">
+          Authors <span className="field__required">*</span>
+        </legend>
+        <div className="admin-checklist__list">
           {sortedAuthors.length === 0 ? (
-            <p className="text-sm text-slate-500">No authors available.</p>
+            <p className="field__hint">No authors available.</p>
           ) : (
             sortedAuthors.map((author) => (
-              <label key={author.id} className="flex items-center gap-2 text-sm text-slate-700">
+              <label key={author.id} className="admin-checklist__item">
                 <input
                   type="checkbox"
                   checked={values.authorIds.includes(author.id)}
                   onChange={() => toggleAuthor(author.id)}
                 />
-                {authorName(author)}
+                <span>{authorName(author)}</span>
               </label>
             ))
           )}
         </div>
-        {errors.authorIds ? (
-          <span className="mt-1 block text-xs text-red-600">{errors.authorIds}</span>
-        ) : null}
+        {errors.authorIds ? <p className="field__error">{errors.authorIds}</p> : null}
       </fieldset>
 
-      <div className="flex flex-wrap gap-3 pt-2">
-        <button
-          type="button"
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          onClick={onCancel}
-          disabled={loading}
-        >
+      <div className="admin-form__actions">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          className="rounded-lg bg-teal-800 px-4 py-2 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60"
-          disabled={loading}
-        >
-          {loading ? 'Saving…' : submitLabel}
-        </button>
+        </Button>
+        <Button type="submit" loading={loading}>
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );

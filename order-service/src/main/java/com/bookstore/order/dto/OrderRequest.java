@@ -1,5 +1,7 @@
 package com.bookstore.order.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
 import java.util.List;
@@ -11,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderRequest {
 
+    @NotEmpty(message = "Order must contain at least one item")
+    @Valid
     private List<OrderItemRequest> items;
-
 }

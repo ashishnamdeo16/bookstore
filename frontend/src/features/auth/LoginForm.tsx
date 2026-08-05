@@ -47,34 +47,37 @@ export function LoginForm() {
   return (
     <form className="auth-form" onSubmit={handleSubmit} noValidate>
       <div className="auth-form__header">
+        <p className="auth-form__eyebrow">Welcome back</p>
         <h1 className="auth-form__title">Sign in</h1>
-        <p className="auth-form__subtitle">Use your Bookstore account to continue.</p>
+        <p className="auth-form__subtitle">Enter your credentials to open your shelf.</p>
       </div>
 
       {apiError ? <Alert variant="error">{apiError}</Alert> : null}
 
-      <Input
-        label="Email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        error={errors.email}
-        required
-      />
+      <div className="auth-form__stack">
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={errors.email}
+          required
+        />
 
-      <PasswordField
-        label="Password"
-        name="password"
-        autoComplete="current-password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        error={errors.password}
-        required
-      />
+        <PasswordField
+          label="Password"
+          name="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={errors.password}
+          required
+        />
+      </div>
 
-      <Button type="submit" loading={loading} className="auth-form__submit">
+      <Button type="submit" loading={loading} fullWidth size="lg" className="auth-form__submit">
         Sign in
       </Button>
 

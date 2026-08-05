@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { LoadingBlock } from '../components/books/ConfirmDialog';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
-import { Spinner } from '../components/ui/Spinner';
+import { PageHeader } from '../components/ui/PageHeader';
 import { ProfileView } from '../features/profile/ProfileView';
 import { useProfile } from '../features/profile/useProfile';
 
@@ -11,21 +12,16 @@ export function ProfilePage() {
   const { profile, loading, error, refresh } = useProfile(user?.userId);
 
   if (loading) {
-    return (
-      <div className="state-block" role="status" aria-live="polite">
-        <Spinner label="Loading profile" />
-        <p>Loading your profile…</p>
-      </div>
-    );
+    return <LoadingBlock label="Loading profile" />;
   }
 
   if (error) {
     return (
-      <div className="state-block">
+      <div className="page-stack">
         <Alert variant="error" title="Couldn’t load profile">
           {error}
         </Alert>
-        <Button variant="secondary" onClick={() => void refresh()}>
+        <Button variant="secondary" className="w-fit" onClick={() => void refresh()}>
           Try again
         </Button>
       </div>
@@ -34,7 +30,7 @@ export function ProfilePage() {
 
   if (!profile || !user) {
     return (
-      <div className="state-block">
+      <div className="page-stack">
         <Alert variant="info" title="No profile yet">
           We couldn’t find profile details for this account.
         </Alert>
@@ -44,12 +40,16 @@ export function ProfilePage() {
 
   return (
     <div className="page-stack">
-      <div className="page-toolbar">
-        <p className="page-eyebrow">Account</p>
-        <Link to="/profile/edit" className="btn btn--secondary">
-          Edit profile
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Account"
+        title="Profile"
+        subtitle="Your personal details and contact information."
+        actions={
+          <Link to="/profile/edit" className="btn btn--secondary">
+            Edit profile
+          </Link>
+        }
+      />
       <ProfileView
         firstName={profile.firstName}
         lastName={profile.lastName}

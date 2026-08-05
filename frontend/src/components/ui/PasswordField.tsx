@@ -1,21 +1,41 @@
 import { forwardRef, useState, type InputHTMLAttributes } from 'react';
 
+type FieldSize = 'sm' | 'md' | 'lg';
+
 interface PasswordFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: string;
   error?: string;
   hint?: string;
+  fieldSize?: FieldSize;
 }
 
 export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
-  function PasswordField({ label, error, hint, id, ...props }, ref) {
+  function PasswordField(
+    { label, error, hint, id, fieldSize = 'md', disabled, required, ...props },
+    ref,
+  ) {
     const [visible, setVisible] = useState(false);
     const inputId = id ?? props.name;
     const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
+    const fieldClasses = [
+      'field',
+      error ? 'field--error' : '',
+      disabled ? 'field--disabled' : '',
+      fieldSize !== 'md' ? `field--${fieldSize}` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     return (
-      <div className={`field ${error ? 'field--error' : ''}`.trim()}>
+      <div className={fieldClasses}>
         <label className="field__label" htmlFor={inputId}>
           {label}
+          {required ? (
+            <span className="field__required" aria-hidden="true">
+              {' '}
+              *
+            </span>
+          ) : null}
         </label>
         <div className="field__password">
           <input
@@ -26,6 +46,8 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
             aria-invalid={error ? true : undefined}
             aria-describedby={describedBy}
             autoComplete={props.autoComplete ?? 'current-password'}
+            disabled={disabled}
+            required={required}
             {...props}
           />
           <button
@@ -34,6 +56,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
             onClick={() => setVisible((value) => !value)}
             aria-label={visible ? 'Hide password' : 'Show password'}
             aria-pressed={visible}
+            disabled={disabled}
           >
             {visible ? 'Hide' : 'Show'}
           </button>

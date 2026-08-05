@@ -1,0 +1,215 @@
+# Infrastructure + application stack for local / demo deployments.
+# Start infra only:  docker compose up mysql kafka -d
+# Full stack:        docker compose up --build -d
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: bookstore-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_USER: ${DB_USERNAME:-bookstore}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-bookstore}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: bookstore-zookeeper
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:3.9
+    container_name: bookstore-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9092:9093"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-auth
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8081
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      JWT_SECRET: ${JWT_SECRET:-3b796f1d-02e9-4263-a411-ceb6e5532239}
+      USER_SERVICE_URL: http://user-service:8082
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-bookstore-dev-internal-key}
+    ports:
+      - "8081:8081"
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-user
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8082
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      JWT_SECRET: ${JWT_SECRET:-3b796f1d-02e9-4263-a411-ceb6e5532239}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-bookstore-dev-internal-key}
+    ports:
+      - "8082:8082"
+
+  book-service:
+    build:
+      context: ./book-service
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-book
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8083
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      JWT_SECRET: ${JWT_SECRET:-3b796f1d-02e9-4263-a411-ceb6e5532239}
+    ports:
+      - "8083:8083"
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-order
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      book-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8084
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      JWT_SECRET: ${JWT_SECRET:-3b796f1d-02e9-4263-a411-ceb6e5532239}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      BOOK_SERVICE_URL: http://book-service:8083
+      USER_SERVICE_URL: http://user-service:8082
+    ports:
+      - "8084:8084"
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-notification
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8085
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_HOST: ${MAIL_HOST:-sandbox.smtp.mailtrap.io}
+      MAIL_PORT: ${MAIL_PORT:-2525}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    ports:
+      - "8085:8085"
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-payment
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      book-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8087
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      JWT_SECRET: ${JWT_SECRET:-3b796f1d-02e9-4263-a411-ceb6e5532239}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      BOOK_SERVICE_URL: http://book-service:8083
+      USER_SERVICE_URL: http://user-service:8082
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    ports:
+      - "8087:8087"
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: ../docker/Dockerfile.service
+    container_name: bookstore-gateway
+    depends_on:
+      - auth-service
+      - user-service
+      - book-service
+      - order-service
+      - payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URI: http://auth-service:8081
+      USER_SERVICE_URI: http://user-service:8082
+      BOOK_SERVICE_URI: http://book-service:8083
+      ORDER_SERVICE_URI: http://order-service:8084
+      PAYMENT_SERVICE_URI: http://payment-service:8087
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:

@@ -6,26 +6,20 @@ import com.bookstore.order.entity.Order;
 
 import java.util.List;
 
-public class OrderMapper {
+public final class OrderMapper {
 
     private OrderMapper() {
-        /* This utility class should not be instantiated */
     }
 
-
     public static OrderResponse toResponse(Order order) {
-
-        List<OrderItemResponse> items =
-                order.getItems()
-                        .stream()
-                        .map(item -> OrderItemResponse.builder()
-                                .bookId(item.getBookId())
-                                .quantity(item.getQuantity())
-                                .price(item.getPrice())
-                                .build()
-                        )
-                        .toList();
-
+        List<OrderItemResponse> items = order.getItems().stream()
+                .map(item -> OrderItemResponse.builder()
+                        .bookId(item.getBookId())
+                        .bookTitle(item.getBookTitle())
+                        .quantity(item.getQuantity())
+                        .price(item.getPrice())
+                        .build())
+                .toList();
 
         return OrderResponse.builder()
                 .orderId(order.getId())
@@ -33,6 +27,8 @@ public class OrderMapper {
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
                 .items(items)
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
                 .build();
     }
 }

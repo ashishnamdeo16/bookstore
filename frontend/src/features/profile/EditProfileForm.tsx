@@ -25,7 +25,6 @@ export function EditProfileForm({ userId, profile, onSaved, onCancel }: EditProf
   });
   const [errors, setErrors] = useState<ProfileFormErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,7 +47,6 @@ export function EditProfileForm({ userId, profile, onSaved, onCancel }: EditProf
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setApiError(null);
-    setSuccess(null);
 
     const nextErrors = validateProfile(values);
     setErrors(nextErrors);
@@ -63,7 +61,6 @@ export function EditProfileForm({ userId, profile, onSaved, onCancel }: EditProf
         dateOfBirth: values.dateOfBirth,
         address: values.address.trim(),
       });
-      setSuccess('Profile updated successfully.');
       onSaved(updated);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -80,14 +77,8 @@ export function EditProfileForm({ userId, profile, onSaved, onCancel }: EditProf
   }
 
   return (
-    <form className="edit-form" onSubmit={handleSubmit} noValidate>
-      <header className="edit-form__header">
-        <h1 className="edit-form__title">Edit profile</h1>
-        <p className="edit-form__subtitle">Update the details associated with your account.</p>
-      </header>
-
+    <form className="edit-form profile-edit-form" onSubmit={handleSubmit} noValidate>
       {apiError ? <Alert variant="error">{apiError}</Alert> : null}
-      {success ? <Alert variant="success">{success}</Alert> : null}
 
       <div className="edit-form__grid">
         <Input

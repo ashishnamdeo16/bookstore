@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+services:
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8082}
+
+app:
+  internal-api-key: ${INTERNAL_API_KEY:bookstore-dev-internal-key}
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/bookstore_auth_db?serverTimezone=UTC
+    username: ${DB_USERNAME:ashish}
+    password: ${DB_PASSWORD:Ashish$1}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+    open-in-view: false
+
+jwt:
+  secret: ${JWT_SECRET:3b796f1d-02e9-4263-a411-ceb6e5532239}
+  expiration: 900000
+
+refresh-token:
+  expiration: 604800000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    org.springframework.web: INFO

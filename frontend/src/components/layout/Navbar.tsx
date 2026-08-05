@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button } from '../ui/Button';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { IconMenu } from './NavIcons';
 
 interface NavbarProps {
   heading: string;
@@ -16,24 +18,37 @@ export function Navbar({ heading, onMenuClick, onLogout, loggingOut }: NavbarPro
   return (
     <header className="portal-navbar">
       <div className="portal-navbar__left">
-        <button type="button" className="portal-navbar__menu" onClick={onMenuClick} aria-label="Open menu">
-          Menu
+        <button
+          type="button"
+          className="portal-navbar__menu"
+          onClick={onMenuClick}
+          aria-label="Open menu"
+        >
+          <IconMenu />
         </button>
-        <h1 className="portal-navbar__heading">{heading}</h1>
+        <div className="portal-navbar__titles">
+          <p className="portal-navbar__eyebrow">Bookstore</p>
+          <h1 className="portal-navbar__heading">{heading}</h1>
+        </div>
       </div>
       <div className="portal-navbar__right">
         {user ? (
-          <div className="user-chip" title={user.email}>
-            <span className="user-chip__email">{user.email}</span>
-            <span className="role-badge role-badge--quiet">{user.role}</span>
+          <div className="user-chip user-chip--navbar" title={user.email}>
             <span className="user-chip__avatar" aria-hidden="true">
               {initials}
             </span>
+            <span className="user-chip__meta">
+              <span className="user-chip__email">{user.email}</span>
+              <span className="role-badge role-badge--quiet">{user.role}</span>
+            </span>
           </div>
         ) : null}
-        <Button variant="ghost" onClick={onLogout} loading={loggingOut}>
-          Sign out
-        </Button>
+        <div className="portal-navbar__actions">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" onClick={onLogout} loading={loggingOut}>
+            Sign out
+          </Button>
+        </div>
       </div>
     </header>
   );

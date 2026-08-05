@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertBanner } from '../../components/books/AlertBanner';
 import { ConfirmDialog, LoadingBlock } from '../../components/books/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { toast } from '../../components/ui/toast';
 import {
   resolveAuthorNames,
   resolveNameById,
@@ -85,6 +87,7 @@ export function AdminManageBooksPage() {
       await bookService.remove(deleteId);
       setBooks((current) => current.filter((book) => book.id !== deleteId));
       setDeleteId(null);
+      toast.success('Book deleted');
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Unable to delete book.');
     } finally {
@@ -96,13 +99,13 @@ export function AdminManageBooksPage() {
 
   if (error || lookups.error) {
     return (
-      <div className="grid gap-4">
+      <div className="page-stack">
         <AlertBanner variant="error" title="Couldn’t load books">
           {error || lookups.error}
         </AlertBanner>
-        <button type="button" className="btn btn--secondary w-fit" onClick={() => void refresh()}>
+        <Button variant="secondary" className="w-fit" onClick={() => void refresh()}>
           Try again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -110,8 +113,9 @@ export function AdminManageBooksPage() {
   return (
     <div className="page-stack">
       <PageHeader
+        eyebrow="Catalog"
         title="Manage books"
-        subtitle={`${filtered.length} titles`}
+        subtitle={`${filtered.length} of ${books.length} titles`}
         actions={
           <Link to="/admin/books/new" className="btn btn--primary">
             Add book
@@ -121,22 +125,24 @@ export function AdminManageBooksPage() {
 
       {actionError ? <AlertBanner variant="error">{actionError}</AlertBanner> : null}
 
-      <div className="md-toolbar">
-        <label className="md-search">
+      <div className="browse-toolbar">
+        <label className="md-search browse-toolbar__search">
           <span className="md-search__icon" aria-hidden="true">
             ⌕
           </span>
           <input
             type="search"
-            placeholder="Search books"
+            placeholder="Search title, author, or ISBN…"
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
               setPage(1);
             }}
+            aria-label="Search books"
           />
         </label>
-        <div className="flex flex-wrap gap-2">
+        <label className="browse-toolbar__filter">
+          <span className="sr-only">Sort by</span>
           <select
             className="md-select"
             value={sortKey}
@@ -147,10 +153,10 @@ export function AdminManageBooksPage() {
             <option value="publishedDate">Sort by date</option>
             <option value="language">Sort by language</option>
           </select>
-          <button type="button" className="btn btn--secondary" onClick={() => setSortAsc((v) => !v)}>
-            {sortAsc ? 'A → Z' : 'Z → A'}
-          </button>
-        </div>
+        </label>
+        <Button variant="secondary" size="sm" onClick={() => setSortAsc((v) => !v)}>
+          {sortAsc ? 'A → Z' : 'Z → A'}
+        </Button>
       </div>
 
       {books.length === 0 ? (
@@ -214,25 +220,25 @@ export function AdminManageBooksPage() {
               {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
             <div className="md-pagination__controls">
-              <button
-                type="button"
-                className="btn btn--secondary"
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={currentPage <= 1}
                 onClick={() => setPage((v) => Math.max(1, v - 1))}
               >
                 Previous
-              </button>
-              <span className="px-2">
+              </Button>
+              <span className="md-pagination__page">
                 Page {currentPage} of {totalPages}
               </span>
-              <button
-                type="button"
-                className="btn btn--secondary"
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage((v) => Math.min(totalPages, v + 1))}
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         </>

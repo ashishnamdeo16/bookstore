@@ -46,13 +46,23 @@ export function ProfileView({
   role,
 }: ProfileViewProps) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Your profile';
+  const initials = fullName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
 
   return (
     <section className="profile-panel">
       <header className="profile-panel__header">
-        <div>
-          <h1 className="profile-panel__title">{fullName}</h1>
-          <p className="profile-panel__email">{email}</p>
+        <div className="profile-panel__identity">
+          <span className="profile-panel__avatar" aria-hidden="true">
+            {initials || 'U'}
+          </span>
+          <div>
+            <h1 className="profile-panel__title">{fullName}</h1>
+            <p className="profile-panel__email">{email}</p>
+          </div>
         </div>
         <span className="role-badge" title="Assigned by the server">
           {role}

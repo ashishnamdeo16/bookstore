@@ -20,4 +20,5 @@ public interface BookServiceClient {
     List<BookResponse> getBooks(
             @RequestBody List<UUID> bookIds
     );
+
 }

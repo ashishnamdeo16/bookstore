@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AlertBanner } from '../../components/books/AlertBanner';
 import { ConfirmDialog, LoadingBlock, SectionCard } from '../../components/books/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { ApiError } from '../../types/api';
+import { toast } from '../../components/ui/toast';
 import { categoryService, type CategoryRequest } from '../../services/categoryService';
+import { ApiError } from '../../types/api';
 import type { Category } from '../../types/book';
 
 const emptyForm: CategoryRequest = { name: '', description: '' };
@@ -45,8 +47,13 @@ export function AdminCategoriesPage() {
         name: form.name.trim(),
         description: form.description?.trim() || undefined,
       };
-      if (editingId) await categoryService.update(editingId, payload);
-      else await categoryService.create(payload);
+      if (editingId) {
+        await categoryService.update(editingId, payload);
+        toast.success('Category updated');
+      } else {
+        await categoryService.create(payload);
+        toast.success('Category created');
+      }
       setForm(emptyForm);
       setEditingId(null);
       await refresh();
@@ -63,6 +70,7 @@ export function AdminCategoriesPage() {
     try {
       await categoryService.remove(deleteId);
       setDeleteId(null);
+      toast.success('Category deleted');
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to delete category.');
@@ -75,98 +83,110 @@ export function AdminCategoriesPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader title="Categories" subtitle="Organize the catalog by category." />
+      <PageHeader
+        eyebrow="Catalog"
+        title="Categories"
+        subtitle={`${items.length} categor${items.length === 1 ? 'y' : 'ies'} in the catalog`}
+      />
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
 
-      <SectionCard>
-        <h2 className="md-page-title mb-4" style={{ fontSize: 18 }}>
-          {editingId ? 'Edit category' : 'Add category'}
-        </h2>
-        <form className="grid gap-4" onSubmit={(e) => void handleSubmit(e)}>
-          <label className="field">
-            <span className="field__label">Name</span>
-            <input
-              className="field__input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              required
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">Description</span>
-            <textarea
-              className="field__input field__textarea"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            />
-          </label>
-          <div className="flex gap-2">
-            <button type="submit" className="btn btn--primary" disabled={saving}>
-              {saving ? 'Saving…' : editingId ? 'Update category' : 'Create category'}
-            </button>
-            {editingId ? (
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm(emptyForm);
-                }}
-              >
-                Cancel
-              </button>
-            ) : null}
-          </div>
-        </form>
-      </SectionCard>
+      <div className="admin-entity-layout">
+        <SectionCard className="admin-entity-form">
+          <h2 className="admin-entity-form__title">
+            {editingId ? 'Edit category' : 'Add category'}
+          </h2>
+          <form className="admin-form" onSubmit={(e) => void handleSubmit(e)}>
+            <div className="admin-form__grid">
+              <label className="field admin-form__full">
+                <span className="field__label">
+                  Name <span className="field__required">*</span>
+                </span>
+                <input
+                  className="field__input"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                />
+              </label>
+              <label className="field admin-form__full">
+                <span className="field__label">Description</span>
+                <textarea
+                  className="field__input field__textarea"
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="admin-form__actions">
+              {editingId ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(emptyForm);
+                  }}
+                >
+                  Cancel
+                </Button>
+              ) : null}
+              <Button type="submit" loading={saving}>
+                {editingId ? 'Update category' : 'Create category'}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
 
-      {items.length === 0 ? (
-        <EmptyState title="No categories" description="Add a category to get started." />
-      ) : (
-        <div className="md-table-wrap">
-          <table className="md-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((category) => (
-                <tr key={category.id}>
-                  <td>{category.name}</td>
-                  <td>{category.description || '—'}</td>
-                  <td>
-                    <div className="md-table__actions">
-                      <button
-                        type="button"
-                        className="md-icon-btn"
-                        onClick={() => {
-                          setEditingId(category.id);
-                          setForm({
-                            name: category.name,
-                            description: category.description ?? '',
-                          });
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="md-icon-btn md-icon-btn--danger"
-                        onClick={() => setDeleteId(category.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="admin-entity-list">
+          {items.length === 0 ? (
+            <EmptyState title="No categories" description="Add a category to get started." />
+          ) : (
+            <div className="md-table-wrap">
+              <table className="md-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((category) => (
+                    <tr key={category.id}>
+                      <td>{category.name}</td>
+                      <td>{category.description || '—'}</td>
+                      <td>
+                        <div className="md-table__actions">
+                          <button
+                            type="button"
+                            className="md-icon-btn"
+                            onClick={() => {
+                              setEditingId(category.id);
+                              setForm({
+                                name: category.name,
+                                description: category.description ?? '',
+                              });
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="md-icon-btn md-icon-btn--danger"
+                            onClick={() => setDeleteId(category.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <ConfirmDialog
         open={Boolean(deleteId)}

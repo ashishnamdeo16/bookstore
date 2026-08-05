@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AlertBanner } from '../../components/books/AlertBanner';
 import { ConfirmDialog, LoadingBlock, SectionCard } from '../../components/books/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { ApiError } from '../../types/api';
+import { toast } from '../../components/ui/toast';
 import { publisherService, type PublisherRequest } from '../../services/publisherService';
+import { ApiError } from '../../types/api';
 import type { Publisher } from '../../types/book';
 
 const emptyForm: PublisherRequest = { name: '', address: '' };
@@ -45,8 +47,13 @@ export function AdminPublishersPage() {
         name: form.name.trim(),
         address: form.address?.trim() || undefined,
       };
-      if (editingId) await publisherService.update(editingId, payload);
-      else await publisherService.create(payload);
+      if (editingId) {
+        await publisherService.update(editingId, payload);
+        toast.success('Publisher updated');
+      } else {
+        await publisherService.create(payload);
+        toast.success('Publisher created');
+      }
       setForm(emptyForm);
       setEditingId(null);
       await refresh();
@@ -63,6 +70,7 @@ export function AdminPublishersPage() {
     try {
       await publisherService.remove(deleteId);
       setDeleteId(null);
+      toast.success('Publisher deleted');
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to delete publisher.');
@@ -75,98 +83,110 @@ export function AdminPublishersPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader title="Publishers" subtitle="Manage publishing houses." />
+      <PageHeader
+        eyebrow="Catalog"
+        title="Publishers"
+        subtitle={`${items.length} publisher${items.length === 1 ? '' : 's'} in the catalog`}
+      />
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
 
-      <SectionCard>
-        <h2 className="md-page-title mb-4" style={{ fontSize: 18 }}>
-          {editingId ? 'Edit publisher' : 'Add publisher'}
-        </h2>
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={(e) => void handleSubmit(e)}>
-          <label className="field">
-            <span className="field__label">Name</span>
-            <input
-              className="field__input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              required
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">Address</span>
-            <input
-              className="field__input"
-              value={form.address}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-            />
-          </label>
-          <div className="md:col-span-2 flex gap-2">
-            <button type="submit" className="btn btn--primary" disabled={saving}>
-              {saving ? 'Saving…' : editingId ? 'Update publisher' : 'Create publisher'}
-            </button>
-            {editingId ? (
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm(emptyForm);
-                }}
-              >
-                Cancel
-              </button>
-            ) : null}
-          </div>
-        </form>
-      </SectionCard>
+      <div className="admin-entity-layout">
+        <SectionCard className="admin-entity-form">
+          <h2 className="admin-entity-form__title">
+            {editingId ? 'Edit publisher' : 'Add publisher'}
+          </h2>
+          <form className="admin-form" onSubmit={(e) => void handleSubmit(e)}>
+            <div className="admin-form__grid">
+              <label className="field">
+                <span className="field__label">
+                  Name <span className="field__required">*</span>
+                </span>
+                <input
+                  className="field__input"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span className="field__label">Address</span>
+                <input
+                  className="field__input"
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="admin-form__actions">
+              {editingId ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(emptyForm);
+                  }}
+                >
+                  Cancel
+                </Button>
+              ) : null}
+              <Button type="submit" loading={saving}>
+                {editingId ? 'Update publisher' : 'Create publisher'}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
 
-      {items.length === 0 ? (
-        <EmptyState title="No publishers" description="Add a publisher to get started." />
-      ) : (
-        <div className="md-table-wrap">
-          <table className="md-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Address</th>
-                <th aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((publisher) => (
-                <tr key={publisher.id}>
-                  <td>{publisher.name}</td>
-                  <td>{publisher.address || '—'}</td>
-                  <td>
-                    <div className="md-table__actions">
-                      <button
-                        type="button"
-                        className="md-icon-btn"
-                        onClick={() => {
-                          setEditingId(publisher.id);
-                          setForm({
-                            name: publisher.name,
-                            address: publisher.address ?? '',
-                          });
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="md-icon-btn md-icon-btn--danger"
-                        onClick={() => setDeleteId(publisher.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="admin-entity-list">
+          {items.length === 0 ? (
+            <EmptyState title="No publishers" description="Add a publisher to get started." />
+          ) : (
+            <div className="md-table-wrap">
+              <table className="md-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Address</th>
+                    <th aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((publisher) => (
+                    <tr key={publisher.id}>
+                      <td>{publisher.name}</td>
+                      <td>{publisher.address || '—'}</td>
+                      <td>
+                        <div className="md-table__actions">
+                          <button
+                            type="button"
+                            className="md-icon-btn"
+                            onClick={() => {
+                              setEditingId(publisher.id);
+                              setForm({
+                                name: publisher.name,
+                                address: publisher.address ?? '',
+                              });
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="md-icon-btn md-icon-btn--danger"
+                            onClick={() => setDeleteId(publisher.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <ConfirmDialog
         open={Boolean(deleteId)}

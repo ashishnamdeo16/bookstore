@@ -33,9 +33,14 @@ public class Order {
     @Column(length = 36)
     private UUID userId;
 
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(length = 36, unique = true)
+    private UUID paymentId;
+
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 40, nullable = false)
     private OrderStatus status;
 
     @OneToMany(

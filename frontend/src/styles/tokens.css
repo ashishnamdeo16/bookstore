@@ -1,0 +1,226 @@
+/**
+ * Bookstore design tokens — single source of truth.
+ * Existing --md-* names are preserved so current components keep working.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Typography */
+  --font-sans: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+
+  /* 8px spacing grid */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 2.5rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Radii */
+  --md-radius: 10px;
+  --md-radius-lg: 16px;
+  --md-radius-full: 999px;
+  --radius-sm: 6px;
+
+  /* Light palette — warm paper + literary accent */
+  --md-primary: #5b4b8a;
+  --md-primary-hover: #4a3d72;
+  --md-primary-pressed: #3d335f;
+  --md-primary-container: #ede9f5;
+  --md-primary-subtle: rgba(91, 75, 138, 0.1);
+  --md-on-primary: #ffffff;
+
+  --md-surface: #ffffff;
+  --md-surface-dim: #f7f4ef;
+  --md-surface-container: #f0ebe3;
+  --md-surface-elevated: #ffffff;
+  --md-background: #faf7f2;
+
+  --md-outline: #e4ddd3;
+  --md-outline-strong: #c9bfb2;
+
+  --md-on-surface: #1a1612;
+  --md-on-surface-variant: #6b635a;
+
+  --md-error: #c62828;
+  --md-error-hover: #b71c1c;
+  --md-error-container: #fdecea;
+  --md-error-border: #f5c4c0;
+
+  --md-success: #2e7d32;
+  --md-success-container: #e8f5e9;
+  --md-success-border: #b7dfb9;
+
+  --md-warning: #e65100;
+  --md-warning-container: #fff3e0;
+
+  --md-info-border: #d4c9e8;
+
+  /* Elevation — soft, premium */
+  --md-elev-1: 0 1px 2px rgba(26, 22, 18, 0.06), 0 1px 3px rgba(26, 22, 18, 0.04);
+  --md-elev-2: 0 4px 12px rgba(26, 22, 18, 0.08), 0 2px 4px rgba(26, 22, 18, 0.04);
+  --md-elev-3: 0 12px 32px rgba(26, 22, 18, 0.12), 0 4px 8px rgba(26, 22, 18, 0.06);
+
+  --md-backdrop: rgba(26, 22, 18, 0.45);
+  --md-glass: rgba(255, 255, 255, 0.72);
+  --md-glass-border: rgba(255, 255, 255, 0.5);
+
+  /* Sidebar (always dark rail for contrast) */
+  --sidebar-bg: #1a1612;
+  --sidebar-text: #f5f0e8;
+  --sidebar-muted: #a89f94;
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --sidebar-active-text: #ffffff;
+
+  /* Skeleton */
+  --skeleton-base: #f0ebe3;
+  --skeleton-shine: #e4ddd3;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 220ms;
+  --duration-slow: 360ms;
+
+  /* Legacy aliases */
+  --ink: var(--md-on-surface);
+  --ink-soft: var(--md-on-surface-variant);
+  --muted: var(--md-on-surface-variant);
+  --line: var(--md-outline);
+  --line-strong: var(--md-outline-strong);
+  --paper: var(--md-surface);
+  --canvas: var(--md-background);
+  --accent: var(--md-primary);
+  --accent-hover: var(--md-primary-hover);
+  --accent-soft: var(--md-primary-container);
+  --danger: var(--md-error);
+  --danger-soft: var(--md-error-container);
+  --success: var(--md-success);
+  --success-soft: var(--md-success-container);
+  --info-soft: var(--md-primary-container);
+  --shadow: var(--md-elev-1);
+  --radius: var(--md-radius);
+
+  color: var(--md-on-surface);
+  background: var(--md-background);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --md-primary: #a898d8;
+  --md-primary-hover: #b9aae3;
+  --md-primary-pressed: #9788c9;
+  --md-primary-container: #2d2640;
+  --md-primary-subtle: rgba(168, 152, 216, 0.14);
+  --md-on-primary: #1a1612;
+
+  --md-surface: #242018;
+  --md-surface-dim: #1e1a15;
+  --md-surface-container: #2c2720;
+  --md-surface-elevated: #2f2a23;
+  --md-background: #14110e;
+
+  --md-outline: #3d362e;
+  --md-outline-strong: #524a40;
+
+  --md-on-surface: #f5f0e8;
+  --md-on-surface-variant: #b8aea2;
+
+  --md-error: #ef9a9a;
+  --md-error-hover: #ffcdd2;
+  --md-error-container: #3e2723;
+  --md-error-border: #5d4037;
+
+  --md-success: #a5d6a7;
+  --md-success-container: #1b3a1d;
+  --md-success-border: #2e5930;
+
+  --md-warning-container: #3e2723;
+
+  --md-info-border: #4a4060;
+
+  --md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --md-elev-2: 0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --md-elev-3: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  --md-backdrop: rgba(0, 0, 0, 0.6);
+  --md-glass: rgba(36, 32, 24, 0.75);
+  --md-glass-border: rgba(255, 255, 255, 0.08);
+
+  --sidebar-bg: #0f0d0b;
+  --sidebar-text: #f5f0e8;
+  --sidebar-muted: #8a8178;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+
+  --skeleton-base: #2c2720;
+  --skeleton-shine: #3d362e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --md-primary: #a898d8;
+    --md-primary-hover: #b9aae3;
+    --md-primary-pressed: #9788c9;
+    --md-primary-container: #2d2640;
+    --md-primary-subtle: rgba(168, 152, 216, 0.14);
+    --md-on-primary: #1a1612;
+
+    --md-surface: #242018;
+    --md-surface-dim: #1e1a15;
+    --md-surface-container: #2c2720;
+    --md-surface-elevated: #2f2a23;
+    --md-background: #14110e;
+
+    --md-outline: #3d362e;
+    --md-outline-strong: #524a40;
+
+    --md-on-surface: #f5f0e8;
+    --md-on-surface-variant: #b8aea2;
+
+    --md-error: #ef9a9a;
+    --md-error-hover: #ffcdd2;
+    --md-error-container: #3e2723;
+    --md-error-border: #5d4037;
+
+    --md-success: #a5d6a7;
+    --md-success-container: #1b3a1d;
+    --md-success-border: #2e5930;
+
+    --md-warning-container: #3e2723;
+
+    --md-info-border: #4a4060;
+
+    --md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --md-elev-2: 0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.25);
+    --md-elev-3: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    --md-backdrop: rgba(0, 0, 0, 0.6);
+    --md-glass: rgba(36, 32, 24, 0.75);
+    --md-glass-border: rgba(255, 255, 255, 0.08);
+
+    --sidebar-bg: #0f0d0b;
+    --sidebar-text: #f5f0e8;
+    --sidebar-muted: #8a8178;
+    --sidebar-hover: rgba(255, 255, 255, 0.06);
+
+    --skeleton-base: #2c2720;
+    --skeleton-shine: #3d362e;
+  }
+}

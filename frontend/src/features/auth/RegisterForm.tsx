@@ -87,21 +87,29 @@ export function RegisterForm() {
   return (
     <form className="auth-form" onSubmit={step === 1 ? handleContinue : handleSubmit} noValidate>
       <div className="auth-form__header">
-        <p className="auth-form__step" aria-live="polite">
-          Step {step} of 2
-        </p>
+        <p className="auth-form__eyebrow">Join Bookstore</p>
         <h1 className="auth-form__title">Create your account</h1>
         <p className="auth-form__subtitle">
           {step === 1
-            ? 'Start with your identity and sign-in credentials.'
+            ? 'Start with your name and sign-in credentials.'
             : 'Add contact details so your profile is ready.'}
         </p>
       </div>
 
-      <div className="stepper" aria-hidden="true">
-        <span className={`stepper__dot ${step >= 1 ? 'is-active' : ''}`} />
-        <span className={`stepper__line ${step >= 2 ? 'is-active' : ''}`} />
-        <span className={`stepper__dot ${step >= 2 ? 'is-active' : ''}`} />
+      <div className="stepper" role="group" aria-label={`Step ${step} of 2`}>
+        <div className={`stepper__step ${step >= 1 ? 'is-active' : ''} ${step > 1 ? 'is-done' : ''}`}>
+          <span className="stepper__dot" aria-hidden="true">
+            1
+          </span>
+          <span className="stepper__label">Account</span>
+        </div>
+        <span className={`stepper__line ${step >= 2 ? 'is-active' : ''}`} aria-hidden="true" />
+        <div className={`stepper__step ${step >= 2 ? 'is-active' : ''}`}>
+          <span className="stepper__dot" aria-hidden="true">
+            2
+          </span>
+          <span className="stepper__label">Profile</span>
+        </div>
       </div>
 
       {apiError ? <Alert variant="error">{apiError}</Alert> : null}
@@ -205,7 +213,13 @@ export function RegisterForm() {
             Back
           </Button>
         ) : null}
-        <Button type="submit" loading={loading} className="auth-form__submit">
+        <Button
+          type="submit"
+          loading={loading}
+          fullWidth={step === 1}
+          size="lg"
+          className="auth-form__submit"
+        >
           {step === 1 ? 'Continue' : 'Create account'}
         </Button>
       </div>

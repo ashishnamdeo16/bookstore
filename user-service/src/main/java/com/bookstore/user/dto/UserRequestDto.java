@@ -30,6 +30,8 @@ public class UserRequestDto {
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 
+    private String email;
+
     @NotBlank(message = "Address is required")
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;

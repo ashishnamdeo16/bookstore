@@ -21,6 +21,11 @@ import java.util.UUID;
 public class User {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(length = 36)
+    private UUID id;
+
     @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "user_id", length = 36)
     private UUID userId;
@@ -28,6 +33,8 @@ public class User {
     private String firstName;
 
     private String lastName;
+
+    private String email;
 
     private String phoneNumber;
 

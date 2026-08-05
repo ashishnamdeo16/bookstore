@@ -1,0 +1,24 @@
+server:
+  port: 8087
+
+services:
+  book-service:
+    url: ${BOOK_SERVICE_URL:http://localhost:8083}
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8082}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  # Set STRIPE_WEBHOOK_SECRET to the whsec_ from: stripe listen --forward-to localhost:8087/api/payments/webhook
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+
+spring:
+  profiles:
+    active: dev
+
+  application:
+    name: payment-service
+
+jwt:
+  secret: ${JWT_SECRET:3b796f1d-02e9-4263-a411-ceb6e5532239}
+  expiration: 900000

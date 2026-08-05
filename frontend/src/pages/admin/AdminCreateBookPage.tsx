@@ -4,6 +4,7 @@ import { AlertBanner } from '../../components/books/AlertBanner';
 import { BookForm } from '../../components/books/BookForm';
 import { LoadingBlock, SectionCard } from '../../components/books/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { toast } from '../../components/ui/toast';
 import { useBookLookups } from '../../hooks/useBooks';
 import { bookService } from '../../services/bookService';
 import { ApiError } from '../../types/api';
@@ -18,6 +19,7 @@ export function AdminCreateBookPage() {
     setSaving(true);
     try {
       await bookService.create(payload);
+      toast.success('Book created');
       navigate('/admin/books', { replace: true });
     } catch (err) {
       throw new Error(err instanceof ApiError ? err.message : 'Unable to create book.');
@@ -36,8 +38,14 @@ export function AdminCreateBookPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl page-stack">
-      <PageHeader backTo="/admin/books" backLabel="Books" title="Add book" />
+    <div className="page-stack admin-book-form-page">
+      <PageHeader
+        backTo="/admin/books"
+        backLabel="Books"
+        eyebrow="Catalog"
+        title="Add book"
+        subtitle="Create a new title in the catalog."
+      />
       <SectionCard>
         <BookForm
           authors={lookups.authors}

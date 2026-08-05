@@ -1,11 +1,12 @@
 package com.bookstore.user.service;
+
 import com.bookstore.user.dto.CreateUserProfileRequest;
 import com.bookstore.user.dto.UserRequestDto;
 import com.bookstore.user.dto.UserResponseDto;
 import com.bookstore.user.entity.User;
+import com.bookstore.user.exception.ResourceNotFoundException;
 import com.bookstore.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +18,8 @@ import java.util.UUID;
  *
  * @author Ashish Namdeo
  */
-
 @Service
 @RequiredArgsConstructor
-@EnableMethodSecurity
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -28,16 +27,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponseDto getUserById(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User user = userRepository.findByUserId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return toResponse(user);
     }
 
     @Override
-    public UserResponseDto createUser(
-            CreateUserProfileRequest request
-    ) {
-
+    @Transactional
+    public UserResponseDto createUser(CreateUserProfileRequest request) {
         User user = User.builder()
                 .userId(request.getUserId())
                 .firstName(request.getFirstName())
@@ -45,11 +42,10 @@ public class UserServiceImpl implements UserService {
                 .phoneNumber(request.getPhoneNumber())
                 .dateOfBirth(request.getDateOfBirth())
                 .address(request.getAddress())
+                .email(request.getEmail())
                 .build();
 
-        User savedUser = userRepository.save(user);
-
-        return toResponse(savedUser);
+        return toResponse(userRepository.save(user));
     }
 
     @Override
@@ -61,35 +57,32 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponseDto> searchUserByFirstName(String keyword) {
-        return userRepository.findByFirstNameContainingIgnoreCase(keyword).stream().map(this::toResponse).toList();
+        return userRepository.findByFirstNameContainingIgnoreCase(keyword).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
     @Transactional
-    public void deleteUserById(UUID id) {
-         userRepository.deleteById(id);
+    public void deleteUserById(UUID userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        userRepository.delete(user);
     }
 
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<UserResponseDto> getInactiveUsers() {
-//        return userRepository.findByActiveFalse().stream().map(this::toResponse).toList();
-//    }
-
     @Override
-    public UserResponseDto updateUser(UserRequestDto request, UUID id) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    @Transactional
+    public UserResponseDto updateUser(UserRequestDto request, UUID userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setDateOfBirth(request.getDateOfBirth());
         user.setAddress(request.getAddress());
-        User updatedUser = userRepository.save(user);
 
-        return toResponse(updatedUser);
+        return toResponse(userRepository.save(user));
     }
 
     public UserResponseDto toResponse(User user) {
@@ -97,6 +90,7 @@ public class UserServiceImpl implements UserService {
                 .userId(user.getUserId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .email(user.getEmail())
                 .dateOfBirth(user.getDateOfBirth())
                 .phoneNumber(user.getPhoneNumber())
                 .address(user.getAddress())

@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: user-service
+  profiles:
+    active: dev
 
   jwt:
     secret: some-long-random-string

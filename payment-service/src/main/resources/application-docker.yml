@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:mysql}:3306/bookstore_payment_db?serverTimezone=UTC
+    username: ${DB_USERNAME:bookstore}
+    password: ${DB_PASSWORD:bookstore}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+services:
+  book-service:
+    url: ${BOOK_SERVICE_URL:http://book-service:8083}
+  user-service:
+    url: ${USER_SERVICE_URL:http://user-service:8082}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}

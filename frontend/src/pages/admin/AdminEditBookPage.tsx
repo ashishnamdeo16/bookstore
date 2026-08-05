@@ -4,6 +4,7 @@ import { AlertBanner } from '../../components/books/AlertBanner';
 import { BookForm } from '../../components/books/BookForm';
 import { LoadingBlock, SectionCard } from '../../components/books/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { toast } from '../../components/ui/toast';
 import { useBook, useBookLookups } from '../../hooks/useBooks';
 import { bookService } from '../../services/bookService';
 import { ApiError } from '../../types/api';
@@ -21,6 +22,7 @@ export function AdminEditBookPage() {
     setSaving(true);
     try {
       await bookService.update(id, payload);
+      toast.success('Book updated');
       navigate('/admin/books', { replace: true });
     } catch (err) {
       throw new Error(err instanceof ApiError ? err.message : 'Unable to update book.');
@@ -46,10 +48,11 @@ export function AdminEditBookPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl page-stack">
+    <div className="page-stack admin-book-form-page">
       <PageHeader
         backTo="/admin/books"
         backLabel="Books"
+        eyebrow="Catalog"
         title="Edit book"
         subtitle={book.title}
       />

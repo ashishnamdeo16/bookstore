@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 interface PageHeaderProps {
   eyebrow?: string;
-  title: string;
+  title?: string;
   subtitle?: string;
   actions?: ReactNode;
   backTo?: string;
@@ -27,7 +27,7 @@ export function PageHeader({
           </Link>
         ) : null}
         {eyebrow ? <p className="page-eyebrow">{eyebrow}</p> : null}
-        <h1 className="md-page-title">{title}</h1>
+        {title ? <h1 className="md-page-title">{title}</h1> : null}
         {subtitle ? <p className="md-page-subtitle">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

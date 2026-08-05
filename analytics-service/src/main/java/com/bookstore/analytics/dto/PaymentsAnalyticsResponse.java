@@ -1,0 +1,17 @@
+package com.bookstore.analytics.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PaymentsAnalyticsResponse {
+
+    private long paidOrders;
+    private long failedPayments;
+    private double paymentSuccessRate;
+}

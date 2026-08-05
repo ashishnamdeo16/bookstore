@@ -5,6 +5,9 @@ services:
   book-service:
     url: http://localhost:8083
 
+  user-service:
+    url: http://localhost:8082
+
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/bookstore_order_db?serverTimezone=UTC
@@ -14,12 +17,6 @@ spring:
 
   kafka:
     bootstrap-servers: localhost:9092
-
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
 
 
   jpa:

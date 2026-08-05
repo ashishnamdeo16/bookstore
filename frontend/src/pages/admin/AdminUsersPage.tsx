@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { userService } from '../../api/userService';
 import { AlertBanner } from '../../components/books/AlertBanner';
 import { ConfirmDialog, LoadingBlock } from '../../components/books/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { toast } from '../../components/ui/toast';
 import { ApiError } from '../../types/api';
 import type { UserProfile } from '../../types/user';
 
@@ -52,6 +54,7 @@ export function AdminUsersPage() {
     try {
       await userService.remove(deleteId);
       setDeleteId(null);
+      toast.success('User profile deleted');
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to delete user.');
@@ -65,23 +68,32 @@ export function AdminUsersPage() {
   return (
     <div className="page-stack">
       <PageHeader
+        eyebrow="Admin"
         title="User management"
-        subtitle="Profiles from the User Service. Full auth administration comes later."
+        subtitle={`${filtered.length} of ${users.length} profiles`}
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => void refresh()}>
+            Refresh
+          </Button>
+        }
       />
 
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
 
-      <label className="md-search max-w-xl">
-        <span className="md-search__icon" aria-hidden="true">
-          ⌕
-        </span>
-        <input
-          type="search"
-          placeholder="Search users"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </label>
+      <div className="browse-toolbar">
+        <label className="md-search browse-toolbar__search">
+          <span className="md-search__icon" aria-hidden="true">
+            ⌕
+          </span>
+          <input
+            type="search"
+            placeholder="Search name, email, or phone…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="Search users"
+          />
+        </label>
+      </div>
 
       {users.length === 0 ? (
         <EmptyState
@@ -111,7 +123,7 @@ export function AdminUsersPage() {
                   <td>{user.email || '—'}</td>
                   <td>{user.phoneNumber || '—'}</td>
                   <td>
-                    <code className="text-xs">{user.userId}</code>
+                    <code className="admin-mono">{user.userId}</code>
                   </td>
                   <td>
                     <div className="md-table__actions">
@@ -131,13 +143,10 @@ export function AdminUsersPage() {
         </div>
       )}
 
-      <div className="placeholder-panel">
-        <h2>More user admin tools coming soon</h2>
-        <p>
-          Role changes and auth-account management stay in the Auth Service. This view lists User
-          Service profiles via existing APIs.
-        </p>
-      </div>
+      <p className="admin-footnote">
+        Role changes and auth-account management stay in the Auth Service. This view lists User
+        Service profiles via existing APIs.
+      </p>
 
       <ConfirmDialog
         open={Boolean(deleteId)}

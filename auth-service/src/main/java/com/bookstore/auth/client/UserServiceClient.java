@@ -1,5 +1,6 @@
 package com.bookstore.auth.client;
 
+import com.bookstore.auth.config.FeignConfig;
 import com.bookstore.auth.dto.CreateUserProfileRequest;
 import com.bookstore.auth.dto.UserResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -8,7 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "user-service",
-        url = "${services.user-service.url}"
+        url = "${services.user-service.url}",
+        configuration = FeignConfig.class
 )
 public interface UserServiceClient {
 

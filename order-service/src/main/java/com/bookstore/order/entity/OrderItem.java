@@ -27,6 +27,8 @@ public class OrderItem {
     @Column(length = 36)
     private UUID bookId;
 
+    private String bookTitle;
+
     private Integer quantity;
 
     private BigDecimal price;

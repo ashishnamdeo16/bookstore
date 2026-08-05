@@ -3,7 +3,10 @@ server:
 
 services:
   user-service:
-    url: localhost:8082
+    url: http://localhost:8082
+
+app:
+  internal-api-key: bookstore-dev-internal-key
 
 spring:
   datasource:
