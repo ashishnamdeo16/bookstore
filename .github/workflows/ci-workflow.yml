@@ -1,13 +1,13 @@
 name: CI - build and deploy services
 
-# Runs when you push to main and files under a watched service folder changed.
+# Allow push triggers and manual triggers via the GitHub UI
 on:
   push:
     branches: [main]
     paths:
-      - "book-service/**"      # (start with one service; add more paths later)
+      - "book-service/**"
+  workflow_dispatch:
 
-# Needed for OIDC: 'id-token: write' lets the job get a token AWS will trust.
 permissions:
   id-token: write
   contents: read
@@ -23,20 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # For now just book-service. To add more, add entries here AND add their
-        # folders to the 'paths:' filter above.
         service:
           - name: book-service
-             manifest: k8s/book-service.yaml
+            manifest: k8s/book-service.yaml
     steps:
       - name: Checkout code repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches history so git diff works correctly
 
-      # Only proceed if THIS service's folder actually changed in the push.
       - name: Check if service changed
         id: changed
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service.name }}/"; then
+          # Handle manual triggers or initial repository pushes safely
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service.name }}/"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -61,7 +63,6 @@ jobs:
         if: steps.changed.outputs.changed == 'true'
         run: |
           TAG="${GITHUB_SHA::7}"
-          # Handle the capital-F Dockerfile some services use.
           DOCKERFILE="${{ matrix.service.name }}/Dockerfile"
           [ -f "$DOCKERFILE" ] || DOCKERFILE="${{ matrix.service.name }}/DockerFile"
           docker buildx build --platform linux/amd64 \
@@ -75,7 +76,6 @@ jobs:
         run: |
           git clone "https://x-access-token:${{ secrets.INFRA_REPO_TOKEN }}@github.com/${INFRA_REPO}.git" infra
           cd infra
-          # Replace the image tag for this service in its manifest.
           sed -i -E "s|(${{ matrix.service.name }}):[^\"[:space:]]+|\1:${IMAGE_TAG}|g" "${{ matrix.service.manifest }}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
