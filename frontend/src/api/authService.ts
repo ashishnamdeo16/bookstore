@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { ApiError } from '../types/api';
 import type {
   AuthTokens,
   LoginRequest,
@@ -26,6 +27,9 @@ export const authService = {
       },
       auth: false,
     });
+    if (!tokens?.accessToken || !tokens?.refreshToken) {
+      throw new ApiError(502, 'Sign-in succeeded but the server did not return tokens.');
+    }
     tokenStorage.setTokens(tokens);
     return tokens;
   },

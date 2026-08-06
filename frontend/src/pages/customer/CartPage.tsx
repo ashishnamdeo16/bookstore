@@ -1,14 +1,33 @@
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckoutSteps } from '../../components/checkout/CheckoutSteps';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { toast } from '../../components/ui/toast';
 import { useCart } from '../../features/cart/CartContext';
 import { formatPrice } from '../../features/orders/orderFormat';
 
 export function CartPage() {
   const navigate = useNavigate();
-  const { items, subtotal, updateQuantity, removeItem, itemCount } = useCart();
+  const { items, subtotal, updateQuantity, removeItem, itemCount, maxQuantity } = useCart();
+  const [limitedBookId, setLimitedBookId] = useState<string | null>(null);
+  const limitTimer = useRef<number | null>(null);
+
+  function handleQuantityChange(bookId: string, rawValue: string) {
+    const requested = Number(rawValue) || 1;
+
+    if (requested > maxQuantity) {
+      setLimitedBookId(bookId);
+      toast.warning(`You can order up to ${maxQuantity} copies of a book in one order.`);
+      if (limitTimer.current) window.clearTimeout(limitTimer.current);
+      limitTimer.current = window.setTimeout(() => setLimitedBookId(null), 6000);
+    } else if (limitedBookId === bookId) {
+      setLimitedBookId(null);
+    }
+
+    updateQuantity(bookId, requested);
+  }
 
   if (items.length === 0) {
     return (
@@ -56,10 +75,13 @@ export function CartPage() {
                     <input
                       type="number"
                       min={1}
+                      max={maxQuantity}
                       value={item.quantity}
-                      onChange={(event) =>
-                        updateQuantity(item.bookId, Number(event.target.value) || 1)
+                      aria-invalid={limitedBookId === item.bookId || undefined}
+                      aria-describedby={
+                        limitedBookId === item.bookId ? `qty-limit-${item.bookId}` : undefined
                       }
+                      onChange={(event) => handleQuantityChange(item.bookId, event.target.value)}
                     />
                   </label>
                   <p className="cart-list__line-total">
@@ -69,6 +91,12 @@ export function CartPage() {
                     Remove
                   </Button>
                 </div>
+                {limitedBookId === item.bookId ? (
+                  <p className="cart-list__limit" id={`qty-limit-${item.bookId}`} role="alert">
+                    Maximum {maxQuantity} copies per book in one order — quantity set to{' '}
+                    {maxQuantity}.
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { userService } from '../../api/userService';
+import { useAuth } from '../../auth/AuthProvider';
 import { AlertBanner } from '../../components/books/AlertBanner';
 import { ConfirmDialog, LoadingBlock } from '../../components/books/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
@@ -10,6 +11,7 @@ import { ApiError } from '../../types/api';
 import type { UserProfile } from '../../types/user';
 
 export function AdminUsersPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,11 @@ export function AdminUsersPage() {
 
   async function handleDelete() {
     if (!deleteId) return;
+    if (currentUser?.userId && deleteId === currentUser.userId) {
+      setDeleteId(null);
+      setError('You cannot delete your own profile from user management.');
+      return;
+    }
     setDeleting(true);
     try {
       await userService.remove(deleteId);
@@ -115,38 +122,43 @@ export function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((user) => (
-                <tr key={user.userId}>
-                  <td>
-                    {[user.firstName, user.lastName].filter(Boolean).join(' ') || '—'}
-                  </td>
-                  <td>{user.email || '—'}</td>
-                  <td>{user.phoneNumber || '—'}</td>
-                  <td>
-                    <code className="admin-mono">{user.userId}</code>
-                  </td>
-                  <td>
-                    <div className="md-table__actions">
-                      <button
-                        type="button"
-                        className="md-icon-btn md-icon-btn--danger"
-                        onClick={() => setDeleteId(user.userId)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((user) => {
+                const isSelf = Boolean(currentUser?.userId && user.userId === currentUser.userId);
+                return (
+                  <tr key={user.userId}>
+                    <td>
+                      <span className="admin-users__name">
+                        {[user.firstName, user.lastName].filter(Boolean).join(' ') || '—'}
+                        {isSelf ? <span className="role-badge role-badge--quiet">You</span> : null}
+                      </span>
+                    </td>
+                    <td>{user.email || '—'}</td>
+                    <td>{user.phoneNumber || '—'}</td>
+                    <td>
+                      <code className="admin-mono">{user.userId}</code>
+                    </td>
+                    <td>
+                      <div className="md-table__actions">
+                        {isSelf ? (
+                          <span className="admin-users__self-note">Your account</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="md-icon-btn md-icon-btn--danger"
+                            onClick={() => setDeleteId(user.userId)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
-
-      <p className="admin-footnote">
-        Role changes and auth-account management stay in the Auth Service. This view lists User
-        Service profiles via existing APIs.
-      </p>
 
       <ConfirmDialog
         open={Boolean(deleteId)}

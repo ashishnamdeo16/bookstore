@@ -1,7 +1,4 @@
-import { useMemo } from 'react';
-import { useAuth } from '../../auth/AuthProvider';
-import { Button } from '../ui/Button';
-import { ThemeToggle } from '../ui/ThemeToggle';
+import { AccountMenu, type AccountMenuItem } from './AccountMenu';
 import { IconMenu } from './NavIcons';
 
 interface NavbarProps {
@@ -9,12 +6,10 @@ interface NavbarProps {
   onMenuClick: () => void;
   onLogout: () => void;
   loggingOut?: boolean;
+  accountItems?: AccountMenuItem[];
 }
 
-export function Navbar({ heading, onMenuClick, onLogout, loggingOut }: NavbarProps) {
-  const { user } = useAuth();
-  const initials = useMemo(() => user?.email?.charAt(0).toUpperCase() ?? 'U', [user?.email]);
-
+export function Navbar({ heading, onMenuClick, onLogout, loggingOut, accountItems }: NavbarProps) {
   return (
     <header className="portal-navbar">
       <div className="portal-navbar__left">
@@ -32,23 +27,7 @@ export function Navbar({ heading, onMenuClick, onLogout, loggingOut }: NavbarPro
         </div>
       </div>
       <div className="portal-navbar__right">
-        {user ? (
-          <div className="user-chip user-chip--navbar" title={user.email}>
-            <span className="user-chip__avatar" aria-hidden="true">
-              {initials}
-            </span>
-            <span className="user-chip__meta">
-              <span className="user-chip__email">{user.email}</span>
-              <span className="role-badge role-badge--quiet">{user.role}</span>
-            </span>
-          </div>
-        ) : null}
-        <div className="portal-navbar__actions">
-          <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={onLogout} loading={loggingOut}>
-            Sign out
-          </Button>
-        </div>
+        <AccountMenu items={accountItems} onLogout={onLogout} loggingOut={loggingOut} />
       </div>
     </header>
   );

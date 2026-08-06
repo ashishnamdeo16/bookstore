@@ -1,16 +1,20 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/userservice}
-    username: ${DB_USERNAME:" "}
-    password: ${DB_PASSWORD:}
+    # Prefer Spring-standard env vars (SPRING_DATASOURCE_*) when present.
+    # This avoids situations where DB_URL is unset/empty and causes Hibernate to fail before it can resolve the dialect.
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:mysql://localhost:3306/bookstore_book_db?serverTimezone=UTC}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:bookstore}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:bookstore}}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
+    # Avoid Hibernate dialect inference requiring JDBC metadata.
+    database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false
 
 logging:
   level:
     root: warn
-    com.example.userservice: info
+    com.example.bookservice: info

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
+import type { AccountMenuItem } from './AccountMenu';
 import { AppFooter } from './Footer';
 import { Navbar } from './Navbar';
 import { Sidebar, type NavItem } from './Sidebar';
@@ -10,6 +11,7 @@ interface PortalShellProps {
   sidebarHomeTo: string;
   navItems: NavItem[];
   heading: string;
+  accountItems?: AccountMenuItem[];
   children: ReactNode;
 }
 
@@ -18,6 +20,7 @@ export function PortalShell({
   sidebarHomeTo,
   navItems,
   heading,
+  accountItems,
   children,
 }: PortalShellProps) {
   const { logout } = useAuth();
@@ -59,6 +62,7 @@ export function PortalShell({
           onMenuClick={() => setSidebarOpen(true)}
           onLogout={() => void handleLogout()}
           loggingOut={loggingOut}
+          accountItems={accountItems}
         />
         <div className="portal-body">
           <main className="portal-main">

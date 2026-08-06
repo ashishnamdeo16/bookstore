@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { paymentService } from '../../api/paymentService';
+import { createClientId } from '../../auth/deviceId';
 import { AlertBanner } from '../../components/books/AlertBanner';
 import { CheckoutSteps } from '../../components/checkout/CheckoutSteps';
 import { Button } from '../../components/ui/Button';
@@ -12,7 +13,7 @@ import { ApiError } from '../../types/api';
 export function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal } = useCart();
-  const [checkoutId] = useState(() => crypto.randomUUID());
+  const [checkoutId] = useState(() => createClientId());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

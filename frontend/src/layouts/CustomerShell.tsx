@@ -1,7 +1,13 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import type { AccountMenuItem } from '../components/layout/AccountMenu';
 import { PortalShell } from '../components/layout/PortalShell';
 import type { NavItem } from '../components/layout/Sidebar';
 import { useCart } from '../features/cart/CartContext';
+
+const ACCOUNT_ITEMS: AccountMenuItem[] = [
+  { to: '/profile', label: 'Your profile', icon: 'profile' },
+  { to: '/orders', label: 'Your orders', icon: 'orders' },
+];
 
 function buildNav(cartCount: number): NavItem[] {
   return [
@@ -23,7 +29,7 @@ function headingFromPath(pathname: string): string {
   if (pathname.startsWith('/cart')) return 'Cart';
   if (pathname.startsWith('/orders')) return 'My Orders';
   if (pathname.startsWith('/profile')) return 'Profile';
-  return 'Customer Dashboard';
+  return 'Dashboard';
 }
 
 export function CustomerShell() {
@@ -32,10 +38,11 @@ export function CustomerShell() {
 
   return (
     <PortalShell
-      sidebarTitle="Customer Portal"
+      sidebarTitle="Shop"
       sidebarHomeTo="/dashboard"
       navItems={buildNav(itemCount)}
       heading={headingFromPath(location.pathname)}
+      accountItems={ACCOUNT_ITEMS}
     >
       <Outlet />
     </PortalShell>

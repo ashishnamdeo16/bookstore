@@ -2,7 +2,12 @@ import { ApiError, type ApiErrorBody } from '../types/api';
 import type { AuthTokens } from '../types/auth';
 import { tokenStorage } from '../auth/tokenStorage';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+// Empty string = same-origin (production nginx proxies /auth and /api).
+// Local Vite default still points at the gateway on :8080.
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL !== undefined
+    ? import.meta.env.VITE_API_BASE_URL
+    : 'http://localhost:8080';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -103,11 +108,19 @@ export async function apiClient<T>(path: string, options: RequestOptions = {}): 
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      'Unable to reach the API. Check your connection and that the API URL is correct.',
+    );
+  }
 
   if (response.status === 401 && auth && retry) {
     const tokens = await refreshAccessToken();
@@ -133,6 +146,9 @@ export async function apiClient<T>(path: string, options: RequestOptions = {}): 
   try {
     return JSON.parse(text) as T;
   } catch {
-    return text as T;
+    throw new ApiError(
+      response.status,
+      'The API returned an unexpected response. Please try again.',
+    );
   }
 }

@@ -21,38 +21,44 @@ services:
       timeout: 5s
       retries: 10
 
-  zookeeper:
-    image: bitnami/zookeeper:3.9
-    container_name: bookstore-zookeeper
-    environment:
-      ALLOW_ANONYMOUS_LOGIN: "yes"
-    ports:
-      - "2181:2181"
-
+  # Official Apache Kafka in KRaft mode (no ZooKeeper).
+  # Inside Docker network:  kafka:9092
+  # From your Mac / IDE:    localhost:9092
   kafka:
-    image: bitnami/kafka:3.9
+    image: apache/kafka:3.9.1
     container_name: bookstore-kafka
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      ALLOW_PLAINTEXT_LISTENER: "yes"
+    hostname: kafka
     ports:
-      - "9092:9093"
+      - "9092:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10
+      start_period: 20s
 
   auth-service:
     build:
       context: ./auth-service
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: Dockerfile
     container_name: bookstore-auth
     depends_on:
       mysql:
@@ -72,7 +78,7 @@ services:
   user-service:
     build:
       context: ./user-service
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: ./DockerFile
     container_name: bookstore-user
     depends_on:
       mysql:
@@ -91,7 +97,7 @@ services:
   book-service:
     build:
       context: ./book-service
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: Dockerfile
     container_name: bookstore-book
     depends_on:
       mysql:
@@ -109,13 +115,13 @@ services:
   order-service:
     build:
       context: ./order-service
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: Dockerfile
     container_name: bookstore-order
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       book-service:
         condition: service_started
       user-service:
@@ -136,13 +142,13 @@ services:
   notification-service:
     build:
       context: ./notification-service
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: DockerFile
     container_name: bookstore-notification
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SERVER_PORT: 8085
@@ -163,13 +169,13 @@ services:
   payment-service:
     build:
       context: ./payment-service
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: DockerFile
     container_name: bookstore-payment
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       book-service:
         condition: service_started
       user-service:
@@ -189,10 +195,31 @@ services:
     ports:
       - "8087:8087"
 
+  analytics-service:
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    container_name: bookstore-analytics
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8088
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME:-bookstore}
+      DB_PASSWORD: ${DB_PASSWORD:-bookstore}
+      JWT_SECRET: ${JWT_SECRET:-3b796f1d-02e9-4263-a411-ceb6e5532239}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8088:8088"
+
   api-gateway:
     build:
       context: ./api-gateway
-      dockerfile: ../docker/Dockerfile.service
+      dockerfile: Dockerfile
     container_name: bookstore-gateway
     depends_on:
       - auth-service
@@ -200,6 +227,7 @@ services:
       - book-service
       - order-service
       - payment-service
+      - analytics-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SERVER_PORT: 8080
@@ -208,6 +236,7 @@ services:
       BOOK_SERVICE_URI: http://book-service:8083
       ORDER_SERVICE_URI: http://order-service:8084
       PAYMENT_SERVICE_URI: http://payment-service:8087
+      ANALYTICS_SERVICE_URI: http://analytics-service:8088
     ports:
       - "8080:8080"
 

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { CartItem } from '../../types/order';
+import { clampBookQuantity, MAX_BOOK_QUANTITY_PER_ORDER } from './cartLimits';
 
 const STORAGE_KEY = 'bookstore.cart';
 
@@ -15,6 +16,7 @@ interface CartContextValue {
   items: CartItem[];
   itemCount: number;
   subtotal: number;
+  maxQuantity: number;
   addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   updateQuantity: (bookId: string, quantity: number) => void;
   removeItem: (bookId: string) => void;
@@ -23,12 +25,19 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function normalizeCartItems(items: CartItem[]): CartItem[] {
+  return items.map((item) => ({
+    ...item,
+    quantity: clampBookQuantity(item.quantity),
+  }));
+}
+
 function loadCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartItem[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? normalizeCartItems(parsed) : [];
   } catch {
     return [];
   }
@@ -46,13 +55,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
-    const qty = Math.max(1, quantity);
+    const qty = clampBookQuantity(quantity);
     setItems((current) => {
       const existing = current.find((entry) => entry.bookId === item.bookId);
       if (existing) {
         return current.map((entry) =>
           entry.bookId === item.bookId
-            ? { ...entry, quantity: entry.quantity + qty, title: item.title, price: item.price }
+            ? {
+                ...entry,
+                quantity: clampBookQuantity(entry.quantity + qty),
+                title: item.title,
+                price: item.price,
+              }
             : entry,
         );
       }
@@ -66,7 +80,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return current.filter((entry) => entry.bookId !== bookId);
       }
       return current.map((entry) =>
-        entry.bookId === bookId ? { ...entry, quantity } : entry,
+        entry.bookId === bookId
+          ? { ...entry, quantity: clampBookQuantity(quantity) }
+          : entry,
       );
     });
   }, []);
@@ -80,7 +96,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartContextValue>(() => {
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    return { items, itemCount, subtotal, addItem, updateQuantity, removeItem, clear };
+    return {
+      items,
+      itemCount,
+      subtotal,
+      maxQuantity: MAX_BOOK_QUANTITY_PER_ORDER,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clear,
+    };
   }, [items, addItem, updateQuantity, removeItem, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

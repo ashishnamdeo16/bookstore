@@ -44,7 +44,6 @@ export function CustomerDashboardPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Customer Portal"
         title={`Welcome, ${firstName}`}
         subtitle="Browse the catalog, manage your cart, and track your orders."
       />

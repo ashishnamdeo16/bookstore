@@ -3,6 +3,8 @@ package com.bookstore.auth.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,6 +27,21 @@ public class GlobalExceptionHandler {
             DuplicateResourceException ex, HttpServletRequest request) {
         ErrorResponse error = buildError(HttpStatus.CONFLICT, ex.getMessage(), request, null);
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler({
+            BadCredentialsException.class,
+            AuthenticationException.class
+    })
+    public ResponseEntity<ErrorResponse> handleAuthenticationErrors(
+            AuthenticationException ex, HttpServletRequest request) {
+        ErrorResponse error = buildError(
+                HttpStatus.UNAUTHORIZED,
+                "Invalid email or password.",
+                request,
+                null
+        );
+        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler({

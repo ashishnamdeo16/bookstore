@@ -1,6 +1,12 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import type { AccountMenuItem } from '../components/layout/AccountMenu';
 import { PortalShell } from '../components/layout/PortalShell';
 import type { NavItem } from '../components/layout/Sidebar';
+
+const ADMIN_ACCOUNT_ITEMS: AccountMenuItem[] = [
+  { to: '/admin/dashboard', label: 'Admin dashboard', icon: 'dashboard' },
+  { to: '/admin/users', label: 'Manage users', icon: 'users' },
+];
 
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' },
@@ -34,6 +40,7 @@ export function AdminShell() {
       sidebarHomeTo="/admin/dashboard"
       navItems={ADMIN_NAV}
       heading={headingFromPath(location.pathname)}
+      accountItems={ADMIN_ACCOUNT_ITEMS}
     >
       <Outlet />
     </PortalShell>

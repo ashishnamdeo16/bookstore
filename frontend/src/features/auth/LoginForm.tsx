@@ -36,6 +36,8 @@ export function LoginForm() {
     } catch (err) {
       if (err instanceof ApiError) {
         setApiError(err.message || 'Invalid email or password.');
+      } else if (err instanceof Error && err.message) {
+        setApiError(err.message);
       } else {
         setApiError('Unable to sign in. Please try again.');
       }

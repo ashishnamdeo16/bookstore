@@ -33,7 +33,7 @@ export function CustomerBookDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { book, loading, error } = useBook(id);
   const lookups = useBookLookups();
-  const { addItem } = useCart();
+  const { addItem, items, maxQuantity } = useCart();
   const [added, setAdded] = useState(false);
 
   if (loading || lookups.loading) {
@@ -54,6 +54,13 @@ export function CustomerBookDetailsPage() {
   const initial = book.title.trim().charAt(0).toUpperCase() || 'B';
 
   function handleAddToCart() {
+    const inCart = items.find((entry) => entry.bookId === book!.id)?.quantity ?? 0;
+
+    if (inCart >= maxQuantity) {
+      toast.warning(`You can order up to ${maxQuantity} copies of a book in one order.`);
+      return;
+    }
+
     addItem({
       bookId: book!.id,
       title: book!.title,
