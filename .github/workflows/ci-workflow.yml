@@ -4,8 +4,8 @@ name: CI - build and deploy services
 on:
   push:
     branches: [main]
-    paths:
-      - "book-service/**"
+    #paths:
+      #- "book-service/**"
   workflow_dispatch:
 
 permissions:
