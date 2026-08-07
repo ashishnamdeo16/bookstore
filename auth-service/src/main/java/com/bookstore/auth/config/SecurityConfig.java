@@ -36,6 +36,7 @@ public class SecurityConfig {
                                 "/auth/logout"
                         ).permitAll()
                         .requestMatchers("/auth/logout-all").authenticated()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

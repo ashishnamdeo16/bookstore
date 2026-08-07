@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'book-service/**'
+      - 'payment-service/**'
   workflow_dispatch:
 
 permissions:
@@ -22,10 +23,14 @@ jobs:
   build-and-update:
     runs-on: ubuntu-latest
     strategy:
+      # One service failing shouldn't cancel the others' builds.
+      fail-fast: false
       matrix:
         service:
           - name: book-service
             manifest: k8s/book-service.yaml
+          - name: payment-service
+            manifest: k8s/payment-service.yaml
     steps:
       - name: Checkout code repo
         uses: actions/checkout@v4

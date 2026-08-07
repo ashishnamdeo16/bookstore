@@ -36,6 +36,7 @@ public class SecurityConfig {
                                 "/auth/logout",
                                 "/api/user/create"
                         ).permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
