@@ -1,6 +1,7 @@
 name: CI - build and deploy services
 
-# Allow push triggers and manual triggers via the GitHub UI
+# Push to main builds only the services whose directory changed. A manual run
+# can target a specific set of services (or all of them).
 on:
   push:
     branches: [main]
@@ -13,10 +14,17 @@ on:
       - 'notification-service/**'
       - 'user-service/**'
       - 'frontend/**'
+      - '.github/workflows/ci-workflow.yml'
+      - '.github/scripts/update_image_tag.py'
   workflow_dispatch:
+    inputs:
+      services:
+        description: 'Comma-separated services to build, or "all"'
+        required: false
+        default: all
+        type: string
 
 permissions:
-  id-token: write
   contents: read
 
 env:
@@ -24,92 +32,385 @@ env:
   ECR_REGISTRY: 016257615899.dkr.ecr.us-west-2.amazonaws.com
   ROLE_ARN: arn:aws:iam::016257615899:role/github-actions-ecr-push
   INFRA_REPO: ashishnamdeo16/bookstore-infra
+  INFRA_BRANCH: main
+  MANIFEST_DIR: k8s
 
 jobs:
-  build-and-update:
+  # ----------------------
+  ----------------------------------------------
+  # 1. Work out what to build. Runs once, so the (expensive) full-history
+  #    checkout and the git diff happen a single time instead of per service.
+  # ---------------------------------------------------------------------------
+  detect-changes:
     runs-on: ubuntu-latest
-    strategy:
-      # One service failing shouldn't cancel the others' builds.
-      fail-fast: false
-      matrix:
-        service:
-          - name: book-service
-            manifest: k8s/book-service.yaml
-          - name: payment-service
-            manifest: k8s/payment-service.yaml
-          - name: order-service
-            manifest: k8s/order-service.yaml
-          - name: auth-service
-            manifest: k8s/auth-service.yaml
-          - name: user-service
-            manifest: k8s/user-service.yaml
-          - name: notification-service
-            manifest: k8s/notification-service.yaml
-          - name: analytics-service
-            manifest: k8s/analytics-service.yaml
-          # Vite compiles VITE_* into the bundle at build time, so these must be
-          # passed as build args. The publishable key is public by design (it
-          # ships in the browser bundle); it must belong to the same Stripe
-          # account as STRIPE_SECRET_KEY or /confirm returns 404.
-          - name: frontend
-            manifest: k8s/frontend.yaml
-            build_args: >-
-              --build-arg VITE_API_BASE_URL=http://a3bd34c83ca024515a4d7b336e19581a-720277816.us-west-2.elb.amazonaws.com
-              --build-arg VITE_STRIPE_PUBLISHABLE_KEY=pk_test_51U0ccEBaxBWQhP49f8ZIHwZTeOAw0ER36ZwHxpBPaKoe0wIXqDEBCAahBZnzpzjiBc7OBldAdQNCJmZq8LuKEAqV00bOEDcwDn
+    timeout-minutes: 10
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+      image_tag: ${{ steps.detect.outputs.image_tag }}
     steps:
       - name: Checkout code repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches history so git diff works correctly
+          fetch-depth: 0 # full history so the push-range diff resolves
 
-      - name: Check if service changed
-        id: changed
+      - name: Detect changed services
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          REQUESTED: ${{ inputs.services }}
+          # Single source of truth for the service catalog. Each service maps to
+          # <MANIFEST_DIR>/<name>.yaml in the infra repo.
+          ALL_SERVICES: >-
+            book-service payment-service order-service auth-service
+            user-service notification-service analytics-service frontend
         run: |
-          # Handle manual triggers or initial repository pushes safely
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service.name }}/"; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          read -r -a all <<< "$ALL_SERVICES"
+          selected=()
+
+          known() { printf '%s\n' "${all[@]}" | grep -qxF "$1"; }
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            requested="${REQUESTED:-all}"
+            if [ "$requested" = "all" ]; then
+              selected=("${all[@]}")
+            else
+              IFS=$', \t' read -r -a requested_list <<< "$requested"
+              for service in ${requested_list[@]+"${requested_list[@]}"}; do
+                [ -z "$service" ] && continue
+                known "$service" || { echo "::error::unknown service '$service'"; exit 1; }
+                selected+=("$service")
+              done
+              [ ${#selected[@]} -gt 0 ] || { echo "::error::no services selected"; exit 1; }
+            fi
+            echo "manual run -> ${selected[*]}"
           else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            # Prefer the exact push range. Fall back to the first parent when the
+            # base is unreachable (force push, branch creation, shallow history),
+            # and to "everything" only when there is no parent at all.
+            base=""
+            if [ -n "$BEFORE_SHA" ] \
+              && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] \
+              && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              base="$BEFORE_SHA"
+            elif git rev-parse -q --verify "${HEAD_SHA}^" >/dev/null; then
+              base="${HEAD_SHA}^"
+              echo "::warning::push base $BEFORE_SHA unavailable, diffing against ${HEAD_SHA}^"
+            fi
+
+            if [ -z "$base" ]; then
+              echo "::warning::no base commit to diff against, building every service"
+              selected=("${all[@]}")
+            else
+              changed_files="$(git diff --name-only "$base" "$HEAD_SHA")"
+              for service in "${all[@]}"; do
+                if grep -qE "^${service}/" <<< "$changed_files"; then
+                  selected+=("$service")
+                fi
+              done
+            fi
           fi
 
+          if [ ${#selected[@]} -eq 0 ]; then
+            services_json='[]'
+            has_changes=false
+          else
+            services_json="$(printf '%s\n' "${selected[@]}" | jq -R . | jq -sc .)"
+            has_changes=true
+          fi
+
+          {
+            echo "services=$services_json"
+            echo "has_changes=$has_changes"
+            echo "image_tag=${HEAD_SHA::7}"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Detected services"
+            echo
+            if [ "$has_changes" = "true" ]; then
+              printf -- '- `%s`\n' "${selected[@]}"
+              echo
+              echo "Image tag: \`${HEAD_SHA::7}\`"
+            else
+              echo "No service directories changed - nothing to build or deploy."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # 2. Build and push one image per changed service, in parallel.
+  # ---------------------------------------------------------------------------
+  build-and-push:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      id-token: write # OIDC federation into AWS
+      contents: read
+    strategy:
+      # One service failing shouldn't cancel the others' builds.
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
+    env:
+      SERVICE: ${{ matrix.service }}
+      IMAGE_TAG: ${{ needs.detect-changes.outputs.image_tag }}
+    steps:
+      - name: Checkout code repo
+        uses: actions/checkout@v4
+
+      - name: Resolve Dockerfile
+        id: dockerfile
+        run: |
+          set -euo pipefail
+          for candidate in "$SERVICE/Dockerfile" "$SERVICE/DockerFile" "$SERVICE/dockerfile"; do
+            if [ -f "$candidate" ]; then
+              echo "path=$candidate" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "::error::no Dockerfile found for $SERVICE"
+          exit 1
+
+      - name: Compose build args
+        id: build_args
+        env:
+          # Vite compiles VITE_* into the bundle at build time, so these must be
+          # passed as build args. The publishable key is public by design (it
+          # ships in the browser bundle); it must belong to the same Stripe
+          # account as STRIPE_SECRET_KEY or /confirm returns 404. Override
+          # either value with a repository variable without editing this file.
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'http://a3bd34c83ca024515a4d7b336e19581a-720277816.us-west-2.elb.amazonaws.com' }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51U0ccEBaxBWQhP49f8ZIHwZTeOAw0ER36ZwHxpBPaKoe0wIXqDEBCAahBZnzpzjiBc7OBldAdQNCJmZq8LuKEAqV00bOEDcwDn' }}
+        run: |
+          set -euo pipefail
+          {
+            echo 'args<<BUILD_ARGS_EOF'
+            if [ "$SERVICE" = "frontend" ]; then
+              echo "VITE_API_BASE_URL=$VITE_API_BASE_URL"
+              echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY"
+            fi
+            echo 'BUILD_ARGS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Configure AWS credentials (OIDC)
-        if: steps.changed.outputs.changed == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to ECR
-        if: steps.changed.outputs.changed == 'true'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
-        if: steps.changed.outputs.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push image (amd64)
-        if: steps.changed.outputs.changed == 'true'
-        run: |
-          TAG="${GITHUB_SHA::7}"
-          DOCKERFILE="${{ matrix.service.name }}/Dockerfile"
-          [ -f "$DOCKERFILE" ] || DOCKERFILE="${{ matrix.service.name }}/DockerFile"
-          docker buildx build --platform linux/amd64 \
-            -f "$DOCKERFILE" \
-            ${{ matrix.service.build_args }} \
-            -t "$ECR_REGISTRY/${{ matrix.service.name }}:$TAG" \
-            --push "${{ matrix.service.name }}"
-          echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service }}
+          file: ${{ steps.dockerfile.outputs.path }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${{ needs.detect-changes.outputs.image_tag }}
+          build-args: ${{ steps.build_args.outputs.args }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-      - name: Update image tag in infra repo
-        if: steps.changed.outputs.changed == 'true'
+      - name: Verify the image is in ECR
         run: |
-          git clone "https://x-access-token:${{ secrets.INFRA_REPO_TOKEN }}@github.com/${INFRA_REPO}.git" infra
-          cd infra
-          sed -i -E "s|(${{ matrix.service.name }}):[^\"[:space:]]+|\1:${IMAGE_TAG}|g" "${{ matrix.service.manifest }}"
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${{ matrix.service.manifest }}"
-          git commit -m "ci: ${{ matrix.service.name }} -> ${IMAGE_TAG}" || echo "no changes"
-          git push
+          set -euo pipefail
+          aws ecr describe-images \
+            --repository-name "$SERVICE" \
+            --image-ids "imageTag=$IMAGE_TAG" \
+            --query 'imageDetails[0].imageDigest' --output text
+
+      # Record the push so the (single) manifest job knows exactly which
+      # services succeeded. Matrix job outputs cannot be used here: parallel
+      # legs overwrite one another.
+      - name: Record pushed tag
+        run: |
+          set -euo pipefail
+          mkdir -p pushed
+          printf '%s' "$IMAGE_TAG" > "pushed/$SERVICE.tag"
+
+      - name: Upload pushed tag
+        uses: actions/upload-artifact@v4
+        with:
+          name: pushed-tag-${{ matrix.service }}
+          path: pushed/
+          retention-days: 1
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # 3. Update every manifest in ONE job and ONE commit. This is the fix for the
+  #    concurrent-push races the per-service matrix used to cause.
+  # ---------------------------------------------------------------------------
+  update-manifests:
+    needs: [detect-changes, build-and-push]
+    if: ${{ !cancelled() && needs.detect-changes.outputs.has_changes == 'true' && contains(needs.build-and-push.result, 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code repo
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Check infra token is configured
+        env:
+          INFRA_REPO_TOKEN: ${{ secrets.INFRA_REPO_TOKEN }}
+        run: |
+          if [ -z "${INFRA_REPO_TOKEN:-}" ]; then
+            echo "::error::secret INFRA_REPO_TOKEN is not set; cannot update $INFRA_REPO"
+            exit 1
+          fi
+
+      - name: Download pushed tags
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pushed-tag-*
+          merge-multiple: true
+          path: pushed
+
+      - name: Update image tags in bookstore-infra
+        env:
+          INFRA_REPO_TOKEN: ${{ secrets.INFRA_REPO_TOKEN }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          shopt -s nullglob
+          tag_files=(pushed/*.tag)
+          if [ ${#tag_files[@]} -eq 0 ]; then
+            echo "::warning::no images were pushed, leaving $INFRA_REPO untouched"
+            exit 0
+          fi
+
+          git clone --depth 1 --branch "$INFRA_BRANCH" \
+            "https://x-access-token:${INFRA_REPO_TOKEN}@github.com/${INFRA_REPO}.git" infra
+          git -C infra config user.name  "github-actions[bot]"
+          git -C infra config user.email "github-actions[bot]@users.noreply.github.com"
+
+          updater="$PWD/.github/scripts/update_image_tag.py"
+          summary_file="$PWD/summary.md"
+          : > "$summary_file"
+
+          apply_updates() {
+            local service tag manifest changed=0
+            : > "$summary_file"
+            for file in "${tag_files[@]}"; do
+              service="$(basename "$file" .tag)"
+              tag="$(cat "$file")"
+              manifest="${MANIFEST_DIR}/${service}.yaml"
+
+              python3 "$updater" \
+                --manifest "infra/$manifest" \
+                --service "$service" \
+                --tag "$tag"
+
+              # Nothing but `image:` lines may ever reach the infra repo.
+              if git -C infra diff -U0 -- "$manifest" \
+                | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' \
+                | grep -qvE '^[+-][[:space:]]*(-[[:space:]]+)?image:'; then
+                echo "::error::refusing to commit non-image changes in $manifest"
+                git -C infra diff -- "$manifest"
+                return 1
+              fi
+
+              if ! git -C infra diff --quiet -- "$manifest"; then
+                changed=1
+                echo "- \`$service\` -> \`$tag\` (\`$manifest\`)" >> "$summary_file"
+              else
+                echo "- \`$service\` already at \`$tag\`" >> "$summary_file"
+              fi
+            done
+            return $((changed == 1 ? 0 : 3))
+          }
+
+          # Rebuild the edits from a fresh origin state on every attempt. That
+          # makes a losing race a plain retry instead of a merge conflict.
+          for attempt in 1 2 3 4 5; do
+            git -C infra fetch --depth 1 origin "$INFRA_BRANCH"
+            git -C infra reset --hard "origin/$INFRA_BRANCH"
+
+            set +e
+            apply_updates
+            status=$?
+            set -e
+
+            if [ "$status" -eq 3 ]; then
+              echo "All manifests already reference the requested tags."
+              cat "$summary_file" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            elif [ "$status" -ne 0 ]; then
+              exit 1
+            fi
+
+            services="$(printf '%s ' "${tag_files[@]}" | xargs -n1 basename | sed 's/\.tag$//' | paste -sd', ' -)"
+            git -C infra add -- "${MANIFEST_DIR}"
+            git -C infra commit -m "ci: update image tags for ${services}" \
+              -m "$(cat "$summary_file")" \
+              -m "Source: ${GITHUB_REPOSITORY}@${SOURCE_SHA}" \
+              -m "Run: ${RUN_URL}"
+
+            if git -C infra push origin "HEAD:${INFRA_BRANCH}"; then
+              echo "Pushed manifest update on attempt $attempt."
+              {
+                echo "### bookstore-infra updated"
+                echo
+                cat "$summary_file"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+
+            echo "::warning::push to $INFRA_REPO rejected (attempt $attempt), retrying"
+            sleep $((attempt * 5))
+          done
+
+          echo "::error::could not push manifest updates to $INFRA_REPO after 5 attempts"
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # 4. Terminal status, including the "nothing changed" path.
+  # ---------------------------------------------------------------------------
+  report:
+    needs: [detect-changes, build-and-push, update-manifests]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Summarise run
+        env:
+          HAS_CHANGES: ${{ needs.detect-changes.outputs.has_changes }}
+          DETECT_RESULT: ${{ needs.detect-changes.result }}
+          BUILD_RESULT: ${{ needs.build-and-push.result }}
+          UPDATE_RESULT: ${{ needs.update-manifests.result }}
+        run: |
+          set -euo pipefail
+          echo "detect=$DETECT_RESULT build=$BUILD_RESULT update=$UPDATE_RESULT"
+
+          if [ "$DETECT_RESULT" != "success" ]; then
+            echo "::error::change detection failed"
+            exit 1
+          fi
+
+          if [ "$HAS_CHANGES" != "true" ]; then
+            echo "No service changes detected - nothing to deploy."
+            exit 0
+          fi
+
+          if [ "$BUILD_RESULT" != "success" ] || [ "$UPDATE_RESULT" != "success" ]; then
+            echo "::error::build or manifest update did not succeed"
+            exit 1
+          fi
+
+          echo "Images pushed and bookstore-infra updated; Argo CD will sync."
