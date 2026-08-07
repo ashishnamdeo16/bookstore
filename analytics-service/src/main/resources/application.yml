@@ -26,6 +26,22 @@ spring:
 jwt:
   secret: ${JWT_SECRET:3b796f1d-02e9-4263-a411-ceb6e5532239}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 logging:
   level:
     com.bookstore.analytics: INFO

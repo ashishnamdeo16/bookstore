@@ -15,11 +15,16 @@ public class PaymentSuccessConsumer {
     private static final Logger log = LoggerFactory.getLogger(PaymentSuccessConsumer.class);
 
     private final OrderService orderService;
+    private final com.bookstore.order.observability.BusinessMetrics businessMetrics;
     private final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    public PaymentSuccessConsumer(OrderService orderService) {
+    public PaymentSuccessConsumer(
+            OrderService orderService,
+            com.bookstore.order.observability.BusinessMetrics businessMetrics
+    ) {
         this.orderService = orderService;
+        this.businessMetrics = businessMetrics;
     }
 
     @KafkaListener(
@@ -31,6 +36,7 @@ public class PaymentSuccessConsumer {
         try {
             PaymentSuccessEvent event = objectMapper.readValue(payload, PaymentSuccessEvent.class);
             orderService.createConfirmedOrder(event);
+            businessMetrics.recordKafkaEventProcessed();
             log.info(
                     "Created confirmed order from payment-success: paymentId={}",
                     event.getPaymentId()

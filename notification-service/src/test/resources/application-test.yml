@@ -1,0 +1,51 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+    consumer:
+      group-id: notification-group-test
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.bookstore.notification.event.OrderCreatedEvent
+        spring.json.use.type.headers: false
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+twilio:
+  account-sid:
+  auth-token:
+  phone-number:
+  sms:
+    enabled: false
+
+management:
+  health:
+    mail:
+      enabled: false
+    kafka:
+      enabled: false
+
+logging:
+  level:
+    root: warn
+    com.bookstore.notification: info

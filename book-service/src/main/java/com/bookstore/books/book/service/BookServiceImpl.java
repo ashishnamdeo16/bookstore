@@ -30,19 +30,22 @@ public class BookServiceImpl implements BookService {
     private final PublisherRepository publisherRepository;
     private final BookRepository bookRepository;
     private final BookCoverStorageService bookCoverStorageService;
+    private final com.bookstore.books.observability.BusinessMetrics businessMetrics;
 
     public BookServiceImpl(
             CategoryRepository categoryRepository,
             AuthorRepository authorRepository,
             PublisherRepository publisherRepository,
             BookRepository bookRepository,
-            BookCoverStorageService bookCoverStorageService
+            BookCoverStorageService bookCoverStorageService,
+            com.bookstore.books.observability.BusinessMetrics businessMetrics
     ) {
         this.categoryRepository = categoryRepository;
         this.authorRepository = authorRepository;
         this.publisherRepository = publisherRepository;
         this.bookRepository = bookRepository;
         this.bookCoverStorageService = bookCoverStorageService;
+        this.businessMetrics = businessMetrics;
     }
 
     @Override
@@ -73,6 +76,7 @@ public class BookServiceImpl implements BookService {
                 .build();
 
         Book savedBook = bookRepository.save(book);
+        businessMetrics.recordBookCreated();
 
         return BookMapper.toResponse(savedBook);
     }

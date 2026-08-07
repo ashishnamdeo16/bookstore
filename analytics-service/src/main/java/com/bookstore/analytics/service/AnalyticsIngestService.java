@@ -30,17 +30,20 @@ public class AnalyticsIngestService {
     private final DailyMetricsRepository dailyMetricsRepository;
     private final PendingOrderItemRepository pendingOrderItemRepository;
     private final BookSalesRepository bookSalesRepository;
+    private final com.bookstore.analytics.observability.BusinessMetrics businessMetrics;
 
     public AnalyticsIngestService(
             ProcessedEventRepository processedEventRepository,
             DailyMetricsRepository dailyMetricsRepository,
             PendingOrderItemRepository pendingOrderItemRepository,
-            BookSalesRepository bookSalesRepository
+            BookSalesRepository bookSalesRepository,
+            com.bookstore.analytics.observability.BusinessMetrics businessMetrics
     ) {
         this.processedEventRepository = processedEventRepository;
         this.dailyMetricsRepository = dailyMetricsRepository;
         this.pendingOrderItemRepository = pendingOrderItemRepository;
         this.bookSalesRepository = bookSalesRepository;
+        this.businessMetrics = businessMetrics;
     }
 
     @Transactional
@@ -84,6 +87,7 @@ public class AnalyticsIngestService {
         dailyMetricsRepository.save(day);
 
         markProcessed(eventKey);
+        businessMetrics.recordEventProcessed("order-created");
         log.info("Analytics recorded order-created: orderId={}", event.getOrderId());
     }
 
@@ -112,6 +116,7 @@ public class AnalyticsIngestService {
 
         pendingOrderItemRepository.deleteByOrderId(event.getOrderId());
         markProcessed(eventKey);
+        businessMetrics.recordEventProcessed("payment-completed");
         log.info(
                 "Analytics recorded payment-completed: orderId={}, amount={}, books={}",
                 event.getOrderId(),
@@ -133,6 +138,7 @@ public class AnalyticsIngestService {
         dailyMetricsRepository.save(day);
 
         markProcessed(eventKey);
+        businessMetrics.recordEventProcessed("payment-failed");
         log.info("Analytics recorded payment-failed: paymentId={}", event.getPaymentId());
     }
 

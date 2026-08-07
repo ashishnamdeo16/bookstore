@@ -13,9 +13,14 @@ public class OrderEventConsumer {
     private static final Logger log = LoggerFactory.getLogger(OrderEventConsumer.class);
 
     private final NotificationService notificationService;
+    private final com.bookstore.notification.observability.BusinessMetrics businessMetrics;
 
-    public OrderEventConsumer(NotificationService notificationService) {
+    public OrderEventConsumer(
+            NotificationService notificationService,
+            com.bookstore.notification.observability.BusinessMetrics businessMetrics
+    ) {
         this.notificationService = notificationService;
+        this.businessMetrics = businessMetrics;
     }
 
     @KafkaListener(
@@ -33,6 +38,7 @@ public class OrderEventConsumer {
                 event.getEmail(),
                 event.getFirstName()
         );
+        businessMetrics.recordKafkaEventProcessed();
         notificationService.process(event);
     }
 }

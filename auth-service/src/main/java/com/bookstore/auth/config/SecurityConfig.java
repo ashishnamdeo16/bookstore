@@ -33,7 +33,9 @@ public class SecurityConfig {
                                 "/auth/login",
                                 "/auth/register",
                                 "/auth/refresh",
-                                "/auth/logout"
+                                "/auth/logout",
+                                "/actuator/health",
+                                "/actuator/prometheus"
                         ).permitAll()
                         .requestMatchers("/auth/logout-all").authenticated()
                         .requestMatchers("/error").permitAll()

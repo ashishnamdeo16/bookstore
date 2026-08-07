@@ -1,0 +1,25 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+
+jwt:
+  secret: 3b796f1d-02e9-4263-a411-ceb6e5532239
+
+management:
+  health:
+    kafka:
+      enabled: false
+
+logging:
+  level:
+    root: warn
+    com.bookstore.analytics: info

@@ -50,17 +50,20 @@ public class OrderServiceImpl implements OrderService {
     private final BookServiceClient bookServiceClient;
     private final UserServiceClient userServiceClient;
     private final OrderEventProducer orderEventProducer;
+    private final com.bookstore.order.observability.BusinessMetrics businessMetrics;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
             BookServiceClient bookServiceClient,
             UserServiceClient userServiceClient,
-            OrderEventProducer orderEventProducer
+            OrderEventProducer orderEventProducer,
+            com.bookstore.order.observability.BusinessMetrics businessMetrics
     ) {
         this.orderRepository = orderRepository;
         this.bookServiceClient = bookServiceClient;
         this.userServiceClient = userServiceClient;
         this.orderEventProducer = orderEventProducer;
+        this.businessMetrics = businessMetrics;
     }
 
     @Override
@@ -131,6 +134,7 @@ public class OrderServiceImpl implements OrderService {
         );
 
         publishAfterCommit(event);
+        businessMetrics.recordOrderCreated();
 
         return OrderMapper.toResponse(savedOrder);
     }
@@ -187,6 +191,7 @@ public class OrderServiceImpl implements OrderService {
                 savedOrder.getStatus().name()
         );
         publishAfterCommit(confirmedOrderEvent);
+        businessMetrics.recordOrderConfirmed();
     }
 
     @Override
@@ -234,6 +239,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+        businessMetrics.recordOrderCancelled();
     }
 
     @Override

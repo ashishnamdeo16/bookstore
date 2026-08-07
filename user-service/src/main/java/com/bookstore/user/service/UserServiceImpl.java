@@ -23,6 +23,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final com.bookstore.user.observability.BusinessMetrics businessMetrics;
 
     @Override
     @Transactional(readOnly = true)
@@ -45,7 +46,9 @@ public class UserServiceImpl implements UserService {
                 .email(request.getEmail())
                 .build();
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+        businessMetrics.recordUserCreated();
+        return toResponse(saved);
     }
 
     @Override

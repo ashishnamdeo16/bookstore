@@ -34,7 +34,9 @@ public class SecurityConfig {
                                 "/auth/register",
                                 "/auth/refresh",
                                 "/auth/logout",
-                                "/api/user/create"
+                                "/api/user/create",
+                                "/actuator/health",
+                                "/actuator/prometheus"
                         ).permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()

@@ -1,0 +1,26 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+jwt:
+  secret: 3b796f1d-02e9-4263-a411-ceb6e5532239
+  expiration: 900000
+
+app:
+  s3:
+    bucket-name: test-bookstore-book-images
+    region: us-west-2
+
+logging:
+  level:
+    root: warn
+    com.bookstore.books: info

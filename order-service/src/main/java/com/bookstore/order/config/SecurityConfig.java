@@ -1,8 +1,11 @@
 package com.bookstore.order.config;
+
 import com.bookstore.order.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+
 @EnableMethodSecurity
 @Configuration
 @RequiredArgsConstructor
@@ -21,22 +27,43 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    //This we added for Our Custom Filter configurations
-    //Because we do not want to use the default spring security configurations
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http){
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                ).authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/error").permitAll()
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/prometheus", "/error").permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized",
+                                        "Authentication is required to access this resource"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden",
+                                        "You do not have permission to access this resource"))
                 )
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
         return http.build();
+    }
+
+    private void writeError(
+            HttpServletResponse response,
+            int status,
+            String error,
+            String message
+    ) throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        String body = """
+                {"timestamp":"%s","status":%d,"error":"%s","message":"%s"}
+                """.formatted(LocalDateTime.now(), status, error, message);
+        response.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
     }
 
     @Bean
@@ -47,7 +74,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
-    ){
+    ) throws Exception {
         return configuration.getAuthenticationManager();
     }
 }

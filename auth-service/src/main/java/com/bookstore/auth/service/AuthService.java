@@ -11,6 +11,7 @@ import com.bookstore.auth.repository.UserRepository;
 import com.bookstore.auth.util.DeviceNameResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserServiceClient userServiceClient;
+    private final com.bookstore.auth.observability.BusinessMetrics businessMetrics;
 
     @Transactional
     public RegisterResponseDto register(RegisterRequestDto request) {
@@ -61,18 +63,24 @@ public class AuthService {
         // User Service owns profile data
         userServiceClient.createUser(createUserRequest);
 
+        businessMetrics.recordRegistration();
         return UserMapper.toResponse(savedUser);
     }
 
     @Transactional
     public LoginResponseDto login(LoginRequestDto request, String userAgent) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException exception) {
+            businessMetrics.recordLoginFailed();
+            throw exception;
+        }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
@@ -92,6 +100,7 @@ public class AuthService {
                         DeviceNameResolver.fromUserAgent(userAgent)
                 );
 
+        businessMetrics.recordLoginSuccessful();
         return LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(created.rawToken())

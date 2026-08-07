@@ -21,13 +21,16 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
+    private final com.bookstore.notification.observability.BusinessMetrics businessMetrics;
 
     public NotificationServiceImpl(
             NotificationRepository notificationRepository,
-            EmailService emailService
+            EmailService emailService,
+            com.bookstore.notification.observability.BusinessMetrics businessMetrics
     ) {
         this.notificationRepository = notificationRepository;
         this.emailService = emailService;
+        this.businessMetrics = businessMetrics;
     }
 
     @Override
@@ -70,10 +73,12 @@ public class NotificationServiceImpl implements NotificationService {
             notification.setStatus(NotificationStatus.SENT);
             notification.setSentAt(LocalDateTime.now());
             notificationRepository.save(notification);
+            businessMetrics.recordEmailSent();
             log.info("Email sent for orderId={} to {}", event.getOrderId(), notification.getEmail());
         } catch (Exception ex) {
             notification.setStatus(NotificationStatus.FAILED);
             notificationRepository.save(notification);
+            businessMetrics.recordEmailFailed();
             log.error("Email failed for orderId={}", event.getOrderId(), ex);
             // Re-throw so Kafka can retry transient failures
             throw new IllegalStateException("Failed to send order confirmation email", ex);

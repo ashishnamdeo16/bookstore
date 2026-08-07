@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,13 +37,19 @@ public class GlobalExceptionHandler {
                 .body(build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null));
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
+    @ExceptionHandler({
+            AccessDeniedException.class,
+            AuthorizationDeniedException.class
+    })
     public ResponseEntity<ErrorResponse> handleAccessDenied(
-            AccessDeniedException ex,
+            Exception ex,
             HttpServletRequest request
     ) {
+        String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+                ? ex.getMessage()
+                : "You do not have permission to access this resource";
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(build(HttpStatus.FORBIDDEN, ex.getMessage(), request, null));
+                .body(build(HttpStatus.FORBIDDEN, message, request, null));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -7,6 +7,11 @@ on:
     paths:
       - 'book-service/**'
       - 'payment-service/**'
+      - 'order-service/**'
+      - 'auth-service/**'
+      - 'analytics-service/**'
+      - 'notification-service/**'
+      - 'user-service/**'
       - 'frontend/**'
   workflow_dispatch:
 
@@ -32,6 +37,16 @@ jobs:
             manifest: k8s/book-service.yaml
           - name: payment-service
             manifest: k8s/payment-service.yaml
+          - name: order-service
+            manifest: k8s/order-service.yaml
+          - name: auth-service
+            manifest: k8s/auth-service.yaml
+          - name: user-service
+            manifest: k8s/user-service.yaml
+          - name: notification-service
+            manifest: k8s/notification-service.yaml
+          - name: analytics-service
+            manifest: k8s/analytics-service.yaml
           # Vite compiles VITE_* into the bundle at build time, so these must be
           # passed as build args. The publishable key is public by design (it
           # ships in the browser bundle); it must belong to the same Stripe

@@ -50,6 +50,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final StripeClient stripeClient;
     private final CheckoutDataClient checkoutDataClient;
     private final PaymentEventProducer paymentEventProducer;
+    private final com.bookstore.payment.observability.BusinessMetrics businessMetrics;
 
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
@@ -126,6 +127,7 @@ public class PaymentServiceImpl implements PaymentService {
                     saved.getCheckoutId(),
                     saved.getTransactionId()
             );
+            businessMetrics.recordCheckoutCreated();
             return toResponse(saved);
         } catch (StripeException exception) {
             throw new RuntimeException("Stripe payment creation failed", exception);
@@ -189,6 +191,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setCompletedAt(LocalDateTime.now());
             paymentRepository.save(payment);
+            businessMetrics.recordPaymentSuccessful();
         }
 
         paymentEventProducer.publishSuccess(toPaymentSuccessEvent(payment));
@@ -214,6 +217,7 @@ public class PaymentServiceImpl implements PaymentService {
                         .amount(payment.getAmount())
                         .build()
         );
+        businessMetrics.recordPaymentFailed();
         log.info("Payment FAILED published for paymentId={}", payment.getId());
     }
 
