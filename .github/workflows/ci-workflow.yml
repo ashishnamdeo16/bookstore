@@ -36,8 +36,7 @@ env:
   MANIFEST_DIR: k8s
 
 jobs:
-  # ----------------------
-  ----------------------------------------------
+  # ---------------------------------------------------------------------------
   # 1. Work out what to build. Runs once, so the (expensive) full-history
   #    checkout and the git diff happen a single time instead of per service.
   # ---------------------------------------------------------------------------
