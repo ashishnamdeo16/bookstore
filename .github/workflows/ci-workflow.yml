@@ -255,6 +255,15 @@ jobs:
           sparse-checkout: .github/scripts
           sparse-checkout-cone-mode: false
 
+      - name: Ensure image-tag updater is present
+        run: |
+          set -euo pipefail
+          if [ ! -f .github/scripts/update_image_tag.py ]; then
+            echo "::error::.github/scripts/update_image_tag.py is missing from the repository; cannot update $INFRA_REPO"
+            echo "::error::Commit and push .github/scripts/update_image_tag.py, then re-run this workflow."
+            exit 1
+          fi
+
       - name: Check infra token is configured
         env:
           INFRA_REPO_TOKEN: ${{ secrets.INFRA_REPO_TOKEN }}
