@@ -34,6 +34,8 @@ export const authService = {
     return tokens;
   },
 
+  // hi
+
   async logout(): Promise<void> {
     const refreshToken = tokenStorage.getRefreshToken();
     try {
