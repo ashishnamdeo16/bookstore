@@ -2,17 +2,31 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { orderService } from '../../api/orderService';
 import { AlertBanner } from '../../components/books/AlertBanner';
-import { Spinner } from '../../components/ui/Spinner';
 import { ApiError } from '../../types/api';
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 60000;
+
+const STEPS = [
+  'Confirming payment with Stripe',
+  'Creating your order',
+  'Finalizing confirmation',
+] as const;
 
 export function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const paymentId = searchParams.get('paymentId');
   const [error, setError] = useState<string | null>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!paymentId || error) return;
+    const id = window.setInterval(() => {
+      setStepIndex((current) => (current + 1) % STEPS.length);
+    }, 2200);
+    return () => window.clearInterval(id);
+  }, [error, paymentId]);
 
   useEffect(() => {
     if (!paymentId) return;
@@ -72,14 +86,27 @@ export function PaymentSuccessPage() {
   }
 
   return (
-    <div className="checkout-result checkout-result--success">
-      <div className="checkout-result__icon" aria-hidden="true">
-        <Spinner label="Creating your order" />
+    <div className="checkout-result checkout-result--processing" role="status" aria-live="polite">
+      <div className="payment-processing" aria-hidden="true">
+        <span className="payment-processing__orbit" />
+        <span className="payment-processing__orbit payment-processing__orbit--delayed" />
+        <span className="payment-processing__core" />
       </div>
-      <h1 className="checkout-result__title">Payment successful</h1>
+      <h1 className="checkout-result__title">Processing payment</h1>
       <p className="checkout-result__body">
-        Stripe confirmed your payment. We’re creating your confirmed order now.
+        Please wait — we’re confirming your payment and creating your order.
       </p>
+      <p className="payment-processing__step" key={stepIndex}>
+        {STEPS[stepIndex]}…
+      </p>
+      <ul className="payment-processing__dots" aria-hidden="true">
+        {STEPS.map((_, index) => (
+          <li
+            key={STEPS[index]}
+            className={`payment-processing__dot ${index === stepIndex ? 'is-active' : ''}`}
+          />
+        ))}
+      </ul>
     </div>
   );
 }

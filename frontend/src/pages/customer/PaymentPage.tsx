@@ -69,6 +69,7 @@ function PaymentForm({ payment }: { payment: PaymentResponse }) {
     });
 
     if (result.error) {
+      setSubmitting(false);
       navigate(`/checkout/payment/${payment.paymentId}/failed`, {
         replace: true,
         state: { message: result.error.message },
@@ -87,29 +88,46 @@ function PaymentForm({ payment }: { payment: PaymentResponse }) {
   }
 
   return (
-    <form className="checkout-panel payment-form" onSubmit={(event) => void handlePay(event)}>
-      <h2 className="checkout-panel__title">Card details</h2>
-      <p className="payment-form__hint">
-        Test card <code>4242 4242 4242 4242</code> · any future expiry · any CVC
-      </p>
-      <div className="payment-form__card">
-        <CardElement options={cardOptions} />
-      </div>
-      {error ? (
-        <AlertBanner variant="error" title="Payment error">
-          {error}
-        </AlertBanner>
-      ) : null}
-      <div className="payment-form__actions">
-        <div>
-          <p className="payment-form__amount-label">Amount due</p>
-          <p className="payment-form__amount">{formatPrice(Number(payment.amount))}</p>
+    <>
+      {submitting ? (
+        <div className="payment-overlay" role="status" aria-live="assertive">
+          <div className="checkout-result checkout-result--processing payment-overlay__card">
+            <div className="payment-processing" aria-hidden="true">
+              <span className="payment-processing__orbit" />
+              <span className="payment-processing__orbit payment-processing__orbit--delayed" />
+              <span className="payment-processing__core" />
+            </div>
+            <h2 className="checkout-result__title">Processing payment</h2>
+            <p className="checkout-result__body">
+              Contacting Stripe — don’t close or refresh this page.
+            </p>
+          </div>
         </div>
-        <Button type="submit" variant="primary" size="lg" loading={submitting} disabled={!stripe}>
-          Pay now
-        </Button>
-      </div>
-    </form>
+      ) : null}
+      <form className="checkout-panel payment-form" onSubmit={(event) => void handlePay(event)}>
+        <h2 className="checkout-panel__title">Card details</h2>
+        <p className="payment-form__hint">
+          Test card <code>4242 4242 4242 4242</code> · any future expiry · any CVC
+        </p>
+        <div className="payment-form__card">
+          <CardElement options={cardOptions} />
+        </div>
+        {error ? (
+          <AlertBanner variant="error" title="Payment error">
+            {error}
+          </AlertBanner>
+        ) : null}
+        <div className="payment-form__actions">
+          <div>
+            <p className="payment-form__amount-label">Amount due</p>
+            <p className="payment-form__amount">{formatPrice(Number(payment.amount))}</p>
+          </div>
+          <Button type="submit" variant="primary" size="lg" loading={submitting} disabled={!stripe}>
+            Pay now
+          </Button>
+        </div>
+      </form>
+    </>
   );
 }
 
