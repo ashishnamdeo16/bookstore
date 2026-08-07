@@ -6,6 +6,7 @@ export interface Book {
   price: number;
   language: string;
   publishedDate: string | null;
+  coverImageUrl: string | null;
   publisherId: string;
   categoryId: string;
   authorIds: string[];

@@ -76,8 +76,19 @@ export function CustomerBookDetailsPage() {
       <PageHeader backTo="/books" backLabel="Browse books" />
 
       <article className="book-detail">
-        <div className="book-detail__cover" aria-hidden="true">
-          <span className="book-detail__initial">{initial}</span>
+        <div
+          className={`book-detail__cover ${book.coverImageUrl ? 'book-detail__cover--photo' : ''}`}
+          aria-hidden={!book.coverImageUrl}
+        >
+          {book.coverImageUrl ? (
+            <img
+              src={book.coverImageUrl}
+              alt={`Cover of ${book.title}`}
+              className="book-detail__cover-image"
+            />
+          ) : (
+            <span className="book-detail__initial">{initial}</span>
+          )}
         </div>
 
         <div className="book-detail__content">

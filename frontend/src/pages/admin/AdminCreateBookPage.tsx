@@ -15,11 +15,14 @@ export function AdminCreateBookPage() {
   const lookups = useBookLookups();
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(payload: BookCreateRequest) {
+  async function handleSubmit(payload: BookCreateRequest, coverFile: File | null) {
     setSaving(true);
     try {
-      await bookService.create(payload);
-      toast.success('Book created');
+      const book = await bookService.create(payload);
+      if (coverFile) {
+        await bookService.uploadCover(book.id, coverFile);
+      }
+      toast.success(coverFile ? 'Book created with cover' : 'Book created');
       navigate('/admin/books', { replace: true });
     } catch (err) {
       throw new Error(err instanceof ApiError ? err.message : 'Unable to create book.');

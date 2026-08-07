@@ -14,10 +14,13 @@ export function CreateBookPage() {
   const lookups = useBookLookups();
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(payload: BookCreateRequest) {
+  async function handleSubmit(payload: BookCreateRequest, coverFile: File | null) {
     setSaving(true);
     try {
       const created = await bookService.create(payload);
+      if (coverFile) {
+        await bookService.uploadCover(created.id, coverFile);
+      }
       navigate(`/books/${created.id}`, { replace: true });
     } catch (err) {
       throw new Error(err instanceof ApiError ? err.message : 'Unable to create book.');

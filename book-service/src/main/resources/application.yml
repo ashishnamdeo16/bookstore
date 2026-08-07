@@ -6,6 +6,15 @@ spring:
     name: book-service
   profiles:
     active: dev
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+app:
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:}
+    region: ${AWS_REGION:us-west-2}
 
 jwt:
   secret: 3b796f1d-02e9-4263-a411-ceb6e5532239

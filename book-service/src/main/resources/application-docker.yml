@@ -8,11 +8,21 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     open-in-view: false
+
+app:
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:}
+    region: ${AWS_REGION:us-west-2}
 
 jwt:
   secret: ${JWT_SECRET:3b796f1d-02e9-4263-a411-ceb6e5532239}

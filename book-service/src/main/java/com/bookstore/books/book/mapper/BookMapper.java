@@ -23,6 +23,7 @@ public class BookMapper {
                 .price(book.getPrice())
                 .language(book.getLanguage())
                 .publishedDate(book.getPublishedDate())
+                .coverImageUrl(book.getCoverImageUrl())
                 .publisherId(book.getPublisher().getId())
                 .categoryId(book.getCategory().getId())
                 .authorIds(book.getAuthors()

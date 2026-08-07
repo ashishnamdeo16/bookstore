@@ -7,12 +7,22 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:bookstore}}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
   jpa:
     hibernate:
-      ddl-auto: validate
-    # Avoid Hibernate dialect inference requiring JDBC metadata.
+      # update so cover_image_url is added automatically on deploy
+      ddl-auto: update
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false
+
+app:
+  s3:
+    bucket-name: ${S3_BUCKET_NAME}
+    region: ${AWS_REGION:us-west-2}
 
 logging:
   level:

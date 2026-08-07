@@ -30,6 +30,8 @@ public class BookResponse {
 
     private LocalDate publishedDate;
 
+    private String coverImageUrl;
+
     private UUID publisherId;
 
     private UUID categoryId;

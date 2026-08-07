@@ -16,11 +16,14 @@ export function EditBookPage() {
   const lookups = useBookLookups();
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(payload: BookCreateRequest) {
+  async function handleSubmit(payload: BookCreateRequest, coverFile: File | null) {
     if (!id) return;
     setSaving(true);
     try {
       await bookService.update(id, payload);
+      if (coverFile) {
+        await bookService.uploadCover(id, coverFile);
+      }
       navigate(`/books/${id}`, { replace: true });
     } catch (err) {
       throw new Error(err instanceof ApiError ? err.message : 'Unable to update book.');
@@ -71,6 +74,7 @@ export function EditBookPage() {
             publisherId: book.publisherId,
             authorIds: book.authorIds ?? [],
           }}
+          existingCoverUrl={book.coverImageUrl}
           authors={lookups.authors}
           categories={lookups.categories}
           publishers={lookups.publishers}

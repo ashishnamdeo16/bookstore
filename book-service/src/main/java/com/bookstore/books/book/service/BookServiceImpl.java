@@ -7,12 +7,15 @@ import com.bookstore.books.book.dto.BookResponse;
 import com.bookstore.books.book.entity.Book;
 import com.bookstore.books.book.mapper.BookMapper;
 import com.bookstore.books.book.repository.BookRepository;
+import com.bookstore.books.book.storage.BookCoverStorageService;
 import com.bookstore.books.category.entity.Category;
 import com.bookstore.books.category.repository.CategoryRepository;
 import com.bookstore.books.exception.ResourceNotFoundException;
 import com.bookstore.books.publisher.entity.Publisher;
 import com.bookstore.books.publisher.repository.PublisherRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashSet;
 import java.util.List;
@@ -26,12 +29,20 @@ public class BookServiceImpl implements BookService {
     private final AuthorRepository authorRepository;
     private final PublisherRepository publisherRepository;
     private final BookRepository bookRepository;
+    private final BookCoverStorageService bookCoverStorageService;
 
-    public BookServiceImpl(CategoryRepository categoryRepository, AuthorRepository authorRepository, PublisherRepository publisherRepository, BookRepository bookRepository) {
+    public BookServiceImpl(
+            CategoryRepository categoryRepository,
+            AuthorRepository authorRepository,
+            PublisherRepository publisherRepository,
+            BookRepository bookRepository,
+            BookCoverStorageService bookCoverStorageService
+    ) {
         this.categoryRepository = categoryRepository;
         this.authorRepository = authorRepository;
         this.publisherRepository = publisherRepository;
         this.bookRepository = bookRepository;
+        this.bookCoverStorageService = bookCoverStorageService;
     }
 
     @Override
@@ -126,5 +137,18 @@ public class BookServiceImpl implements BookService {
                 .stream()
                 .map(BookMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public BookResponse uploadCover(UUID id, MultipartFile file) {
+        Book book = bookRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+        String coverImageUrl = bookCoverStorageService.uploadCover(id, file);
+        book.setCoverImageUrl(coverImageUrl);
+
+        Book savedBook = bookRepository.save(book);
+        return BookMapper.toResponse(savedBook);
     }
 }

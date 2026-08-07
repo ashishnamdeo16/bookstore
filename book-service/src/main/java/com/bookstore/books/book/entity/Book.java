@@ -48,6 +48,9 @@ public class Book {
 
     private LocalDate publishedDate;
 
+    @Column(length = 1024)
+    private String coverImageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
