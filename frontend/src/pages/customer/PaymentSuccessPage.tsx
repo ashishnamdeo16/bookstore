@@ -6,12 +6,21 @@ import { ApiError } from '../../types/api';
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 60000;
+/** Keep the processing screen visible long enough to read, even if order is ready instantly. */
+const MIN_VISIBLE_MS = 4500;
+const STEP_INTERVAL_MS = 1500;
 
 const STEPS = [
   'Confirming payment with Stripe',
   'Creating your order',
   'Finalizing confirmation',
 ] as const;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 export function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -23,8 +32,8 @@ export function PaymentSuccessPage() {
   useEffect(() => {
     if (!paymentId || error) return;
     const id = window.setInterval(() => {
-      setStepIndex((current) => (current + 1) % STEPS.length);
-    }, 2200);
+      setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
+    }, STEP_INTERVAL_MS);
     return () => window.clearInterval(id);
   }, [error, paymentId]);
 
@@ -34,14 +43,29 @@ export function PaymentSuccessPage() {
     let timeoutId: number | undefined;
     const startedAt = Date.now();
 
+    async function goToOrder(orderId: string) {
+      const elapsed = Date.now() - startedAt;
+      const remaining = MIN_VISIBLE_MS - elapsed;
+      if (remaining > 0) {
+        await wait(remaining);
+      }
+      if (!cancelled) {
+        setStepIndex(STEPS.length - 1);
+        await wait(600);
+      }
+      if (!cancelled) {
+        navigate(`/orders/${orderId}`, {
+          replace: true,
+          state: { paymentConfirmed: true },
+        });
+      }
+    }
+
     async function waitForOrder() {
       try {
         const order = await orderService.getByPaymentId(paymentId!);
         if (!cancelled) {
-          navigate(`/orders/${order.orderId}`, {
-            replace: true,
-            state: { paymentConfirmed: true },
-          });
+          await goToOrder(order.orderId);
         }
       } catch (err) {
         if (cancelled) return;
@@ -100,10 +124,10 @@ export function PaymentSuccessPage() {
         {STEPS[stepIndex]}…
       </p>
       <ul className="payment-processing__dots" aria-hidden="true">
-        {STEPS.map((_, index) => (
+        {STEPS.map((step, index) => (
           <li
-            key={STEPS[index]}
-            className={`payment-processing__dot ${index === stepIndex ? 'is-active' : ''}`}
+            key={step}
+            className={`payment-processing__dot ${index <= stepIndex ? 'is-active' : ''}`}
           />
         ))}
       </ul>

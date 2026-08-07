@@ -21,6 +21,14 @@ import type { PaymentResponse } from '../../types/payment';
 
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '';
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+/** Keep the Pay-now overlay visible even when Stripe responds instantly. */
+const MIN_STRIPE_OVERLAY_MS = 2000;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 function useCardOptions(): StripeCardElementOptions {
   const { resolvedTheme } = useTheme();
@@ -64,6 +72,7 @@ function PaymentForm({ payment }: { payment: PaymentResponse }) {
 
     setSubmitting(true);
     setError(null);
+    const startedAt = Date.now();
     const result = await stripe.confirmCardPayment(payment.clientSecret, {
       payment_method: { card },
     });
@@ -79,6 +88,10 @@ function PaymentForm({ payment }: { payment: PaymentResponse }) {
 
     if (result.paymentIntent?.status === 'succeeded') {
       clear();
+      const remaining = MIN_STRIPE_OVERLAY_MS - (Date.now() - startedAt);
+      if (remaining > 0) {
+        await wait(remaining);
+      }
       navigate(`/payment-success?paymentId=${payment.paymentId}`, { replace: true });
       return;
     }
