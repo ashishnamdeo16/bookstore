@@ -36,7 +36,22 @@ const sidebars: SidebarsConfig = {
     'database/overview',
     'security/overview',
     'frontend/overview',
-    'deployment/overview',
+    {
+      type: 'category',
+      label: 'Deployment',
+      items: [
+        'deployment/overview',
+        'deployment/ci-cd',
+        'deployment/kubernetes',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'AWS Architecture',
+      items: [
+        'aws/overview',
+      ],
+    },
     'monitoring/logging',
     'future/improvements',
   ],

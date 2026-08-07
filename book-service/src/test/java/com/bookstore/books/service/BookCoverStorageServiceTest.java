@@ -15,6 +15,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.core.exception.SdkClientException;
 
 import java.util.UUID;
 
@@ -107,6 +108,18 @@ class BookCoverStorageServiceTest {
                 "file", "cover.png", "image/png", new byte[]{1, 2});
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenThrow(S3Exception.builder().message("denied").statusCode(403).build());
+
+        assertThatThrownBy(() -> storageService.uploadCover(UUID.randomUUID(), file))
+                .isInstanceOf(StorageException.class)
+                .hasMessage("Failed to upload cover image to storage.");
+    }
+
+    @Test
+    void GivenMissingCredentials_WhenUploadCover_ThenThrowStorageException() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "cover.png", "image/png", new byte[]{1, 2});
+        when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+                .thenThrow(SdkClientException.builder().message("Unable to load credentials").build());
 
         assertThatThrownBy(() -> storageService.uploadCover(UUID.randomUUID(), file))
                 .isInstanceOf(StorageException.class)

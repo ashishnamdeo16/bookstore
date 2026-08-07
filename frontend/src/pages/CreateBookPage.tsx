@@ -16,14 +16,36 @@ export function CreateBookPage() {
 
   async function handleSubmit(payload: BookCreateRequest, coverFile: File | null) {
     setSaving(true);
+    let createdId: string | null = null;
     try {
       const created = await bookService.create(payload);
+      createdId = created.id;
       if (coverFile) {
-        await bookService.uploadCover(created.id, coverFile);
+        try {
+          await bookService.uploadCover(created.id, coverFile);
+        } catch (coverErr) {
+          try {
+            await bookService.remove(created.id);
+          } catch {
+            // Best-effort rollback; surface the cover error either way.
+          }
+          createdId = null;
+          throw coverErr;
+        }
       }
       navigate(`/books/${created.id}`, { replace: true });
     } catch (err) {
-      throw new Error(err instanceof ApiError ? err.message : 'Unable to create book.');
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Unable to create book.';
+      throw new Error(
+        createdId
+          ? `${message} The book was saved without a cover.`
+          : message,
+      );
     } finally {
       setSaving(false);
     }

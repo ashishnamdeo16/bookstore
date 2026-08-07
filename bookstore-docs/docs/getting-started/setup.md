@@ -72,15 +72,18 @@ Services and ports in `docker-compose.yml`:
 | Payment Service | `8087` |
 | Analytics Service | `8088` |
 | MySQL | `3306` |
-| Zookeeper | `2181` |
-| Kafka external listener | `9092` |
+| Kafka (KRaft, external listener) | `9092` |
+
+:::info No Zookeeper
+Kafka runs in **KRaft mode** (`apache/kafka:3.9.1`). There is no Zookeeper container in the current Compose file.
+:::
 
 ## Run without Docker
 
 Typical order:
 
 1. Start MySQL
-2. Start Zookeeper and Kafka
+2. Start Kafka (KRaft — no Zookeeper required)
 3. Start backend services
 4. Start frontend
 

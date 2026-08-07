@@ -5,10 +5,10 @@ import com.bookstore.books.exception.BadRequestException;
 import com.bookstore.books.exception.StorageException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -62,7 +62,7 @@ public class BookCoverStorageService {
                     .build();
 
             s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
-        } catch (S3Exception ex) {
+        } catch (SdkException ex) {
             throw new StorageException("Failed to upload cover image to storage.", ex);
         } catch (IOException ex) {
             throw new StorageException("Failed to read uploaded cover image.", ex);

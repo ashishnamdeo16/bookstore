@@ -28,7 +28,13 @@ export function AdminEditBookPage() {
       toast.success(coverFile ? 'Book and cover updated' : 'Book updated');
       navigate('/admin/books', { replace: true });
     } catch (err) {
-      throw new Error(err instanceof ApiError ? err.message : 'Unable to update book.');
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Unable to update book.';
+      throw new Error(message);
     } finally {
       setSaving(false);
     }

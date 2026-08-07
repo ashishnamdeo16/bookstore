@@ -17,15 +17,37 @@ export function AdminCreateBookPage() {
 
   async function handleSubmit(payload: BookCreateRequest, coverFile: File | null) {
     setSaving(true);
+    let createdId: string | null = null;
     try {
       const book = await bookService.create(payload);
+      createdId = book.id;
       if (coverFile) {
-        await bookService.uploadCover(book.id, coverFile);
+        try {
+          await bookService.uploadCover(book.id, coverFile);
+        } catch (coverErr) {
+          try {
+            await bookService.remove(book.id);
+          } catch {
+            // Best-effort rollback; surface the cover error either way.
+          }
+          createdId = null;
+          throw coverErr;
+        }
       }
       toast.success(coverFile ? 'Book created with cover' : 'Book created');
       navigate('/admin/books', { replace: true });
     } catch (err) {
-      throw new Error(err instanceof ApiError ? err.message : 'Unable to create book.');
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Unable to create book.';
+      throw new Error(
+        createdId
+          ? `${message} The book was saved without a cover.`
+          : message,
+      );
     } finally {
       setSaving(false);
     }

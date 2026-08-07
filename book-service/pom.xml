@@ -69,6 +69,12 @@
 			<artifactId>s3</artifactId>
 		</dependency>
 
+		<!-- Required for EKS IRSA (WebIdentityTokenCredentialsProvider). -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sts</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
