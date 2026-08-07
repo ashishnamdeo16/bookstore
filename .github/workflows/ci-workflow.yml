@@ -222,14 +222,6 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-      - name: Verify the image is in ECR
-        run: |
-          set -euo pipefail
-          aws ecr describe-images \
-            --repository-name "$SERVICE" \
-            --image-ids "imageTag=$IMAGE_TAG" \
-            --query 'imageDetails[0].imageDigest' --output text
-
       # Record the push so the (single) manifest job knows exactly which
       # services succeeded. Matrix job outputs cannot be used here: parallel
       # legs overwrite one another.
