@@ -7,6 +7,7 @@ on:
     paths:
       - 'book-service/**'
       - 'payment-service/**'
+      - 'frontend/**'
   workflow_dispatch:
 
 permissions:
@@ -31,6 +32,15 @@ jobs:
             manifest: k8s/book-service.yaml
           - name: payment-service
             manifest: k8s/payment-service.yaml
+          # Vite compiles VITE_* into the bundle at build time, so these must be
+          # passed as build args. The publishable key is public by design (it
+          # ships in the browser bundle); it must belong to the same Stripe
+          # account as STRIPE_SECRET_KEY or /confirm returns 404.
+          - name: frontend
+            manifest: k8s/frontend.yaml
+            build_args: >-
+              --build-arg VITE_API_BASE_URL=http://a3bd34c83ca024515a4d7b336e19581a-720277816.us-west-2.elb.amazonaws.com
+              --build-arg VITE_STRIPE_PUBLISHABLE_KEY=pk_test_51U0ccEBaxBWQhP49f8ZIHwZTeOAw0ER36ZwHxpBPaKoe0wIXqDEBCAahBZnzpzjiBc7OBldAdQNCJmZq8LuKEAqV00bOEDcwDn
     steps:
       - name: Checkout code repo
         uses: actions/checkout@v4
@@ -72,6 +82,7 @@ jobs:
           [ -f "$DOCKERFILE" ] || DOCKERFILE="${{ matrix.service.name }}/DockerFile"
           docker buildx build --platform linux/amd64 \
             -f "$DOCKERFILE" \
+            ${{ matrix.service.build_args }} \
             -t "$ECR_REGISTRY/${{ matrix.service.name }}:$TAG" \
             --push "${{ matrix.service.name }}"
           echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"

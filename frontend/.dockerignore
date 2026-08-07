@@ -1,0 +1,11 @@
+# Never bake a developer's local env into the image -- VITE_* values are
+# compiled into the bundle at build time, so a stray .env silently ships
+# whatever keys happen to be on the builder's machine.
+.env
+.env.*
+!.env.example
+
+node_modules
+dist
+.git
+*.log
