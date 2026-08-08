@@ -108,7 +108,3 @@ The service stores event keys like:
 - `payment-failed:{paymentId}`
 
 This prevents double-counting under at-least-once delivery.
-
-## Known gap
-
-The checked-in `payment-service` publishes `payment-success`, not `payment-completed`. Until that is corrected, success-side payment analytics will not fully update from Kafka.

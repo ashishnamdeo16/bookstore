@@ -53,7 +53,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'monitoring/logging',
-    'future/improvements',
   ],
 
   apiSidebar: [

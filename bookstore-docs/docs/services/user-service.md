@@ -102,8 +102,3 @@ sequenceDiagram
 
 - `auth-service` owns credentials and roles
 - `user-service` owns profile fields
-
-## Error handling
-
-- Missing internal API key -> `AuthorizationDeniedException`
-- Missing profile -> service-level not-found exception

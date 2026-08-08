@@ -164,9 +164,3 @@ Fetch many books at once — used by `order-service` and `payment-service`. The 
 ```json
 { "name": "Addison-Wesley", "address": "Boston, MA" }
 ```
-
----
-
-## Book images
-
-`BookImageController` is mapped at `/api/bookimage` but has **no implemented endpoints**, and the path is **not** included in the gateway routes. It is a placeholder for future image upload support.

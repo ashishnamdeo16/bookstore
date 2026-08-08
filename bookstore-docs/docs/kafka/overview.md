@@ -11,7 +11,6 @@ title: Kafka
 | `order-created` | `order-service` | `notification-service`, `analytics-service` |
 | `payment-success` | `payment-service` | `order-service` |
 | `payment-failed` | `payment-service` | `analytics-service` |
-| `payment-completed` | none in current code | `analytics-service` |
 
 ## Event schemas
 
@@ -65,7 +64,3 @@ flowchart LR
 - `payment-service` waits on `.get()` for publish success/failure
 - `order-service` publishes after transaction commit using `TransactionSynchronizationManager`
 - `analytics-service` adds an application-level deduplication table via `processed_events`
-
-## Known inconsistency
-
-`analytics-service` listens for `payment-completed`, but `payment-service` publishes `payment-success`. Documentation intentionally keeps this mismatch visible because it exists in the repository today.

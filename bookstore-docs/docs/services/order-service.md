@@ -121,9 +121,3 @@ sequenceDiagram
 ## Status transitions
 
 See the [Orders API](../api/orders.md#status-lifecycle-typical-happy-path) page for the full status state diagram.
-
-## Notes
-
-- `createOrder(OrderRequest)` exists in the service layer and publishes `order-created`, but the controller shown in the current repository does not expose a `POST /api/orders` endpoint.
-- Access checks inside the service use the authenticated principal UUID and an admin-role check.
-- Cancelable statuses are `CREATED`, `PENDING`, `PAYMENT_PENDING`, and `CONFIRMED`.

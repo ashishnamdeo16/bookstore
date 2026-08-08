@@ -56,8 +56,3 @@ sequenceDiagram
 - `payment-service`: `/api/payments/webhook`, `/actuator/health`
 - `book-service`: `/actuator/health`, `/actuator/info`
 - `analytics-service`: `/actuator/health`, `/actuator/info`
-
-## Current gaps to be aware of
-
-- Some local `application.yml` files still contain default JWT secrets in source for non-production use
-- No centralized authorization service is present; each service validates JWTs separately

@@ -130,10 +130,8 @@ stripe listen --forward-to localhost:8087/api/payments/webhook
 - `bookstore_auth_db`
 - `bookstore_user_db`
 - `bookstore_books_db`
+- `bookstore_book_db`
 - `bookstore_order_db`
 - `bookstore_notification_db`
 - `bookstore_payment_db`
-
-:::note
-No analytics database is created in `docker/mysql/init.sql`, even though `analytics-service` defaults to `bookstore_analytics_db` in its local `application.yml`. If analytics is run locally without schema bootstrap changes, that database must exist first.
-:::
+- `bookstore_analytics_db`
